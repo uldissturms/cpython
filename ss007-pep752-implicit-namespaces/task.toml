@@ -1,0 +1,47 @@
+schema_version = "1.1"
+
+[task]
+name = "codimango/ss007-pep752-implicit-namespaces"
+format = "swe_bench_multi_turn"
+workstream = "swe_bench_long_horizon"
+track_assignment = "swe-bench-long-horizon"
+description = "Implement PEP 752 implicit namespaces for package repositories in CPython"
+keywords = ["python", "packaging", "pep-752", "namespace", "security"]
+
+[metadata]
+creator = "uldis"
+fleet_id = "pm-90bbb8c731e4642eb123"
+fleet_name = "accepted-peps-cpython"
+fleet_item = "pep-0752"
+fleet_created_at = "2026-11-04T12:24:08+00:00"
+author_name = "Uldis Sturms"
+author_email = "uldis@meta.com"
+difficulty = "hard"
+category = "dependency"
+category_usecase = "security_patch"
+category_subdomain = "web_fullstack"
+category_subcategory = "file_upload_pipeline"
+reward_type = "binary"
+tags = ["semi-synthetic", "pipeline:lambo-express", "generator:lambo-express", "swe-bench-long-horizon-track", "lh-create-swe-single-turn", "lh-review-task-beta", "private-repo-automation-v0", "generator:pact", "pipeline:lambo-fleet", "idea-origin:human"]
+
+[environment]
+build_timeout_sec = 1800.0
+cpus = 4
+memory_mb = 8192
+storage_mb = 20480
+gpus = 0
+allow_internet = true
+mcp_servers = []
+
+[[steps]]
+name = "1_pep752"
+dependencies = []
+min_reward = 1.0
+artifacts = ["/app"]
+
+[steps.verifier]
+timeout_sec = 1800.0
+environment_mode = "separate"
+
+[steps.agent]
+timeout_sec = 10800.0

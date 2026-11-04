@@ -1,0 +1,10 @@
+{
+  "instance_id": "aai_python__cpython-416e8d89f57ac39f0ca8187dc6bc44f5f6ff994c",
+  "repo": "python/cpython",
+  "base_commit": "416e8d89f57ac39f0ca8187dc6bc44f5f6ff994c",
+  "patch": "",
+  "test_patch": "",
+  "fail_to_pass": [],
+  "pass_to_pass": [],
+  "selected_test_files_to_run": []
+}
