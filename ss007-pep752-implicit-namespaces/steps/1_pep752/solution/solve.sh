@@ -4,7 +4,7 @@ cd /app 2>/dev/null || cd /testbed 2>/dev/null
 
 cat > solution_patch.diff << '__SOLUTION__'
 diff --git a/Doc/library/distribution.rst b/Doc/library/distribution.rst
-index bec1ca3cc39..a2f227addda 100644
+index bec1ca3..a2f227a 100644
 --- a/Doc/library/distribution.rst
 +++ b/Doc/library/distribution.rst
 @@ -10,5 +10,6 @@ with a local index server, or without any index server at all.
@@ -16,7 +16,7 @@ index bec1ca3cc39..a2f227addda 100644
     zipapp.rst
 diff --git a/Doc/library/packagenamespaces.rst b/Doc/library/packagenamespaces.rst
 new file mode 100644
-index 00000000000..3641b64a2ba
+index 0000000..3641b64
 --- /dev/null
 +++ b/Doc/library/packagenamespaces.rst
 @@ -0,0 +1,235 @@
@@ -256,7 +256,7 @@ index 00000000000..3641b64a2ba
 +   :pep:`691` -- JSON-based Simple API for Python Package Indexes
 +      Version 1.5 carries the namespace metadata.
 diff --git a/Doc/whatsnew/3.16.rst b/Doc/whatsnew/3.16.rst
-index dcfa9ff5bdf..23231d2acca 100644
+index dcfa9ff..23231d2 100644
 --- a/Doc/whatsnew/3.16.rst
 +++ b/Doc/whatsnew/3.16.rst
 @@ -120,7 +120,10 @@ Default interactive shell
@@ -273,7 +273,7 @@ index dcfa9ff5bdf..23231d2acca 100644
  Improved modules
 diff --git a/Lib/packagenamespaces/__init__.py b/Lib/packagenamespaces/__init__.py
 new file mode 100644
-index 00000000000..6481620aa8d
+index 0000000..6481620
 --- /dev/null
 +++ b/Lib/packagenamespaces/__init__.py
 @@ -0,0 +1,64 @@
@@ -343,7 +343,7 @@ index 00000000000..6481620aa8d
 +]
 diff --git a/Lib/packagenamespaces/__main__.py b/Lib/packagenamespaces/__main__.py
 new file mode 100644
-index 00000000000..eef704d9a90
+index 0000000..eef704d
 --- /dev/null
 +++ b/Lib/packagenamespaces/__main__.py
 @@ -0,0 +1,8 @@
@@ -357,10 +357,10 @@ index 00000000000..eef704d9a90
 +    raise SystemExit(main())
 diff --git a/Lib/packagenamespaces/cli.py b/Lib/packagenamespaces/cli.py
 new file mode 100644
-index 00000000000..60f9188a0b7
+index 0000000..51af654
 --- /dev/null
 +++ b/Lib/packagenamespaces/cli.py
-@@ -0,0 +1,269 @@
+@@ -0,0 +1,290 @@
 +"""Grant-management command line for package namespaces (PEP 752).
 +
 +State lives in a JSON store file (see ``--store``)::
@@ -461,20 +461,41 @@ index 00000000000..60f9188a0b7
 +    grants = state.get("grants", {})
 +    if not isinstance(grants, dict):
 +        raise GrantError(f"store {path!r} has a non-object 'grants' key")
-+    for namespace, owner in grants.items():
-+        index.store.reserve(namespace, owner)
++    try:
++        for namespace, owner in grants.items():
++            index.store.reserve(namespace, owner)
++    except GrantError:
++        raise
++    except (ValueError, TypeError) as exc:
++        raise GrantError(
++            f"store {path!r} holds an invalid grant entry: {exc}"
++        ) from exc
 +    projects = state.get("projects", {})
 +    if not isinstance(projects, dict):
 +        raise GrantError(f"store {path!r} has a non-object 'projects' key")
-+    for project, owner in projects.items():
-+        index.register_project(project, owner)
++    try:
++        for project, owner in projects.items():
++            index.register_project(project, owner)
++    except GrantError:
++        raise
++    except (ValueError, TypeError) as exc:
++        raise GrantError(
++            f"store {path!r} holds an invalid project entry: {exc}"
++        ) from exc
 +    grandfathered = state.get("grandfathered", [])
 +    if not isinstance(grandfathered, list):
 +        raise GrantError(
 +            f"store {path!r} has a non-array 'grandfathered' key"
 +        )
-+    for project in grandfathered:
-+        index.grandfathered.add(project)
++    try:
++        for project in grandfathered:
++            index.grandfathered.add(project)
++    except GrantError:
++        raise
++    except (ValueError, TypeError) as exc:
++        raise GrantError(
++            f"store {path!r} holds an invalid grandfathered entry: {exc}"
++        ) from exc
 +    return index
 +
 +
@@ -632,10 +653,10 @@ index 00000000000..60f9188a0b7
 +    return status
 diff --git a/Lib/packagenamespaces/grants.py b/Lib/packagenamespaces/grants.py
 new file mode 100644
-index 00000000000..175944b4ba8
+index 0000000..3b62189
 --- /dev/null
 +++ b/Lib/packagenamespaces/grants.py
-@@ -0,0 +1,211 @@
+@@ -0,0 +1,222 @@
 +"""Grant lifecycle for package namespaces (PEP 752, Semantics).
 +
 +A grant reserves a namespace for one owner on one package repository.
@@ -788,6 +809,17 @@ index 00000000000..175944b4ba8
 +                f"no active grant for {normalized!r}"
 +            ) from None
 +        _check_owner(new_owner)
++        for existing in self._grants.values():
++            if (
++                existing.name != normalized
++                and grants_overlap(normalized, existing.name)
++                and existing.owner != new_owner
++            ):
++                raise OverlapError(
++                    f"transfer of {normalized!r} to {new_owner!r} overlaps "
++                    f"the grant for {existing.name!r} "
++                    f"held by {existing.owner!r}"
++                )
 +        moved = Grant(name=current.name, owner=new_owner)
 +        self._grants[normalized] = moved
 +        return moved
@@ -849,7 +881,7 @@ index 00000000000..175944b4ba8
 +        )
 diff --git a/Lib/packagenamespaces/matching.py b/Lib/packagenamespaces/matching.py
 new file mode 100644
-index 00000000000..a53138981bc
+index 0000000..a531389
 --- /dev/null
 +++ b/Lib/packagenamespaces/matching.py
 @@ -0,0 +1,28 @@
@@ -883,7 +915,7 @@ index 00000000000..a53138981bc
 +    )
 diff --git a/Lib/packagenamespaces/metadata.py b/Lib/packagenamespaces/metadata.py
 new file mode 100644
-index 00000000000..e155f94ac74
+index 0000000..e155f94
 --- /dev/null
 +++ b/Lib/packagenamespaces/metadata.py
 @@ -0,0 +1,147 @@
@@ -1036,10 +1068,10 @@ index 00000000000..e155f94ac74
 +        return "\n".join(lines)
 diff --git a/Lib/packagenamespaces/normalize.py b/Lib/packagenamespaces/normalize.py
 new file mode 100644
-index 00000000000..7a048b3009e
+index 0000000..b047a63
 --- /dev/null
 +++ b/Lib/packagenamespaces/normalize.py
-@@ -0,0 +1,56 @@
+@@ -0,0 +1,58 @@
 +"""Name normalization and validation for package namespaces (PEP 752).
 +
 +A namespace MUST be a `valid project name
@@ -1086,7 +1118,9 @@ index 00000000000..7a048b3009e
 +    """
 +    if not isinstance(name, str):
 +        return False
-+    return _VALID_NAME_RE.match(name) is not None
++    # fullmatch, not match: "$" matches before a trailing newline, so
++    # match() would accept "foo\n" as valid.
++    return _VALID_NAME_RE.fullmatch(name) is not None
 +
 +
 +def hyphen_depth(name: str) -> int:
@@ -1098,7 +1132,7 @@ index 00000000000..7a048b3009e
 +    return normalize_name(name).count("-")
 diff --git a/Lib/packagenamespaces/policy.py b/Lib/packagenamespaces/policy.py
 new file mode 100644
-index 00000000000..5eba589eb7b
+index 0000000..5eba589
 --- /dev/null
 +++ b/Lib/packagenamespaces/policy.py
 @@ -0,0 +1,85 @@
@@ -1189,7 +1223,7 @@ index 00000000000..5eba589eb7b
 +        return verdicts
 diff --git a/Lib/packagenamespaces/uploads.py b/Lib/packagenamespaces/uploads.py
 new file mode 100644
-index 00000000000..ed4f8d0da21
+index 0000000..ed4f8d0
 --- /dev/null
 +++ b/Lib/packagenamespaces/uploads.py
 @@ -0,0 +1,97 @@
@@ -1290,18 +1324,42 @@ index 00000000000..ed4f8d0da21
 +    if grandfathered is not None and grandfathered.covers(normalized):
 +        return True
 +    raise UploadConflictError(normalized, matches[0].name, owner)
+diff --git a/Makefile.pre.in b/Makefile.pre.in
+index e74deee..dc2a80d 100644
+--- a/Makefile.pre.in
++++ b/Makefile.pre.in
+@@ -2630,6 +2630,7 @@ LIBSUBDIRS=	asyncio \
+ 		json \
+ 		logging \
+ 		multiprocessing multiprocessing/dummy \
++		packagenamespaces \
+ 		pathlib \
+ 		profile \
+ 		profiling profiling/sampling profiling/tracing \
 diff --git a/Misc/NEWS.d/next/Library/2026-11-04-12-00-00.pep-752.ss007.rst b/Misc/NEWS.d/next/Library/2026-11-04-12-00-00.pep-752.ss007.rst
 new file mode 100644
-index 00000000000..932d41c5922
+index 0000000..932d41c
 --- /dev/null
 +++ b/Misc/NEWS.d/next/Library/2026-11-04-12-00-00.pep-752.ss007.rst
 @@ -0,0 +1,3 @@
 +Add :mod:`packagenamespaces`, implementing :pep:`752` (implicit namespaces
 +for package repositories): namespace grants, upload authorization, JSON
 +Simple API v1.5 metadata and installer security policies.
+diff --git a/Python/stdlib_module_names.h b/Python/stdlib_module_names.h
+index 565be27..78c082b 100644
+--- a/Python/stdlib_module_names.h
++++ b/Python/stdlib_module_names.h
+@@ -205,6 +205,7 @@ static const char* _Py_stdlib_module_names[] = {
+ "operator",
+ "optparse",
+ "os",
++"packagenamespaces",
+ "pathlib",
+ "pdb",
+ "pickle",
 diff --git a/Tools/packagenamespaces/gen_fixtures.sh b/Tools/packagenamespaces/gen_fixtures.sh
 new file mode 100755
-index 00000000000..d5ae0d43afc
+index 0000000..d5ae0d4
 --- /dev/null
 +++ b/Tools/packagenamespaces/gen_fixtures.sh
 @@ -0,0 +1,36 @@
@@ -1343,7 +1401,7 @@ index 00000000000..d5ae0d43afc
 +echo "wrote fixtures to $OUTDIR"
 diff --git a/Tools/packagenamespaces/verify_offline.sh b/Tools/packagenamespaces/verify_offline.sh
 new file mode 100755
-index 00000000000..57c4b3f70f3
+index 0000000..57c4b3f
 --- /dev/null
 +++ b/Tools/packagenamespaces/verify_offline.sh
 @@ -0,0 +1,123 @@

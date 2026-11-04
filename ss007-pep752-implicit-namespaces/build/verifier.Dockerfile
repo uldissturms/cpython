@@ -31,11 +31,29 @@ RUN git init -q /app && cd /app \
  && git checkout -q 416e8d89f57ac39f0ca8187dc6bc44f5f6ff994c \
  && git clean -fdq
 
+# Stage shared extensions as COPIES, not symlinks (mirrors
+# environment/Dockerfile: same make behavior in both images).
+RUN cd /app \
+ && sed -i 's|$(LN) -sf ../../$$mod $$target/`basename $$mod`|cp -f $$mod $$target/`basename $$mod`|' Makefile.pre.in \
+ && sed -i 's|# create relative links from build/lib\.platform/egg\.so to Modules/egg\.so|# copy build/lib.platform/egg.so from Modules/egg.so (copies, never links: link-bearing trees refuse artifact capture)|' Makefile.pre.in \
+ && grep -q 'cp -f \$\$mod' Makefile.pre.in \
+ && ! grep -q 'LN) -sf ../../' Makefile.pre.in
+
 # Capped to the task's declared shape (task.toml [environment] cpus = 4):
 # an unbounded make reads the host's core count and OOMs under Nest's cap.
+# No `|| true`: a failed make must fail the build loudly (mirrors
+# environment/Dockerfile).
 RUN ./configure -q --prefix=/opt/python-ss007 --with-ensurepip=no \
  && make -j4 -s \
- && rm -rf build/__pycache__ 2>/dev/null || true
+ && rm -rf build/__pycache__ 2>/dev/null \
+ && test "$(find build/lib.* -name '*.so' | wc -l)" -gt 50
+
+# Freeze the image's mechanical tree change as one commit (mirrors
+# environment/Dockerfile). Tracked-only: build products stay untracked.
+RUN cd /app && git add -u \
+ && (git diff --cached --quiet || git -c user.name="lambo-task" -c user.email="lambo-task@localhost" commit -qm "task image: frozen build inputs (sharedmods copies)") \
+ && test -z "$(git status --porcelain --untracked-files=no)" \
+ && git log --oneline -1
 
 RUN mkdir -p /logs/verifier /tests
 

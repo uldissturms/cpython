@@ -75,6 +75,9 @@ class NamingTests(unittest.TestCase):
             "foo bar",
             "foo/bar",
             "foo@bar",
+            "foo\n",
+            "foo\nbar",
+            "\tfoo",
         ):
             with self.subTest(name=name):
                 self.assertFalse(is_valid_namespace(name))

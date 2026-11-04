@@ -33,6 +33,33 @@ fi
 # previous run's verdicts.
 rm -f "$JUNIT_XML"
 
+# Build and stage a DESTDIR install when the tree has the package. The
+# suite's InstallTests grade the installed tree and sys.stdlib_module_names,
+# both of which read Makefile.pre.in / Python/stdlib_module_names.h THROUGH
+# a build; the agent's edits (or the oracle's patch) land after the image
+# build, so the binary, Makefile and install can be stale. Doing it HERE --
+# from bash, before the suite's interpreter starts -- matters twice over:
+# rebuilding from INSIDE the suite relinks the running ./python binary,
+# which segfaults it, and even a no-op `make` spawned as a subprocess of
+# this alpha interpreter segfaults the parent (both measured). The guards
+# keep the common cases free: trees without the package skip everything,
+# and a fresh marker skips repeat runs in one container. A failed build or
+# install is data, not an error: the suite below fails naturally on a tree
+# that does not build or install (and a missing marker retries next run).
+DESTDIR=/tmp/lambo-destdir
+MARKER="$DESTDIR/.lambo-installed"
+if [ -d "$REPO/Lib/packagenamespaces" ]; then
+    if [ "$REPO/Python/stdlib_module_names.h" -nt "$REPO/python" ] || \
+       [ "$REPO/Makefile.pre.in" -nt "$REPO/Makefile" ] || \
+       [ ! -f "$MARKER" ]; then
+        make -C "$REPO" -j4 -s >/dev/null 2>&1 || true
+        if rm -rf "$DESTDIR" && \
+           make -C "$REPO" install DESTDIR="$DESTDIR" >/dev/null 2>&1; then
+            touch "$MARKER"
+        fi
+    fi
+fi
+
 # Locked-down invocation, all four at once:
 #   - neutral cwd (never $REPO: nothing agent-owned shadows an import),
 #   - absolute interpreter path,

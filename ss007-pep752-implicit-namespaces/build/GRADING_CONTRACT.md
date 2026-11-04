@@ -49,7 +49,9 @@ imports of `normalize_name`, `is_valid_namespace`, `hyphen_depth`.
   `"foo.bar"`, `"foo_bar"`, `"foo-bar"`, `"a1.b2_c3-d4"` are valid.
 - `test.test_pep752_naming.NamingTests.test_invalid_names_rejected`:
   `""`, `"-foo"`, `"foo-"`, `".foo"`, `"foo."`, `"_foo"`, `"foo_"`,
-  `"-"`, `"."`, `"foo!"`, `"foo bar"`, `"foo/bar"`, `"foo@bar"` invalid.
+  `"-"`, `"."`, `"foo!"`, `"foo bar"`, `"foo/bar"`, `"foo@bar"`,
+  `"foo\n"`, `"foo\nbar"`, `"\tfoo"` invalid (a trailing or embedded
+  newline or tab never validates, even though the ends look alphanumeric).
 - `test.test_pep752_naming.NamingTests.test_invalid_names_reject_non_string`:
   `None`, `123`, `b"foo"`, `["foo"]` are invalid (False, no raise).
 - `test.test_pep752_naming.NamingTests.test_hyphen_depth_counts`:
@@ -86,7 +88,8 @@ GrantStoreTests (fresh `GrantStore()` per test unless noted):
 - `test.test_pep752_semantics.GrantStoreTests.test_reserve_normalizes`:
   `reserve("Acme.Widgets","acme-corp").name=="acme-widgets"`.
 - `test.test_pep752_semantics.GrantStoreTests.test_reserve_rejects_invalid`:
-  `"", "-foo", "foo-", "foo!", "foo bar"` raise `InvalidNamespaceError`.
+  `"", "-foo", "foo-", "foo!", "foo bar", "foo\n"` raise
+  `InvalidNamespaceError`.
 - `test.test_pep752_semantics.GrantStoreTests.test_reserve_rejects_empty_owner`:
   `"", None, 123` as owner raise `ValueError`.
 - `test.test_pep752_semantics.GrantStoreTests.test_depth_limit_enforced`:
@@ -119,6 +122,12 @@ GrantStoreTests (fresh `GrantStore()` per test unless noted):
   owner-a, `transfer` to owner-b, `get` shows owner-b.
 - `test.test_pep752_semantics.GrantStoreTests.test_transfer_unknown_raises`:
   `UnknownGrantError`.
+- `test.test_pep752_semantics.GrantStoreTests.test_transfer_conflicting_raises`:
+  grant `"foo"` then `"foo-bar"` to owner-a; `transfer("foo-bar",
+  "owner-b")` raises `OverlapError`, and both grants still show owner-a
+  afterwards. A second store grants `"foo-bar"` then `"foo"` to owner-a;
+  `transfer("foo", "owner-b")` raises `OverlapError` too. Transferring
+  either grant back to owner-a succeeds.
 - `test.test_pep752_semantics.GrantStoreTests.test_remove`: grant then
   `remove` returns it; store empty; `get` is None.
 - `test.test_pep752_semantics.GrantStoreTests.test_remove_unknown_raises`:
@@ -231,17 +240,18 @@ builds an index with `"acme"` and `"acme-widgets"` granted to
 - `test.test_pep752_metadata.MetadataTests.test_html_carries_no_namespace_keys`:
   page for `"acme-thing"` contains the filename but neither
   `"namespace"` nor `"namespaces"`.
-- `test.test_pep752_metadata.MetadataTests.test_html_byte_stable`:
+- `test.test_pep752_metadata.MetadataTests.test_html_semantically_stable`:
   `simple_html("demo", [{demo-1.0.tar.gz + demo-1.0-py3-none-any.whl
-  at https://example.com/...}])` equals, byte for byte, the 9-line page
-  below (every line `\n`-terminated, including the last; two-space
-  indents; head and title inline on one line -- all pinned):
-  `<!DOCTYPE html>`, `<html>`,
-  `  <head><title>Links for demo</title></head>`, `  <body>`,
-  `    <h1>Links for demo</h1>`,
-  `    <a href="https://example.com/demo-1.0.tar.gz">demo-1.0.tar.gz</a><br/>`,
-  `    <a href="https://example.com/demo-1.0-py3-none-any.whl">demo-1.0-py3-none-any.whl</a><br/>`,
-  `  </body>`, `</html>`.
+  at https://example.com/...}])` carries the same document the reference
+  renderer emits, compared structurally so that whitespace, indentation,
+  attribute order and line-break markup are all free. The page must hold
+  `<!doctype html>` (any case), an `<html>`, `<head>` and `<body>` open
+  tag each, a `<title>` and an `<h1>` both wrapping exactly `Links for
+  demo`, and, in file order, one anchor per file whose `href` equals the
+  file url and whose text equals the filename (match each with
+  `<a\b[^>]*href="..."[^>]*>...</a>`, url and filename regex-escaped).
+  It must hold neither `"namespace"` nor `"namespaces"`, and two renders
+  of equal inputs must be byte-equal (deterministic).
 - `test.test_pep752_metadata.MetadataTests.test_html_escapes_special_characters`:
   filename `a<b>&"c.tar.gz` renders escaped, url query `&` renders
   `&amp;`, and no literal `<b>` survives.
@@ -304,8 +314,8 @@ the `Tools/packagenamespaces/` scripts. `DocsTests` reads doc files.
   parses to `[{"name":"acme","owner":"acme-corp"}]`.
 - `test.test_pep752_tooling.CliTests.test_cli_reserve_overlap_fails`:
   after `reserve acme --owner acme-corp`,
-  `reserve acme-evil --owner mallory` exits 1 with `overlap`
-  (case-insensitive) on stderr.
+  `reserve acme-evil --owner mallory` exits 1 with the full phrase
+  `overlaps the grant` (case-insensitive) on stderr.
 - `test.test_pep752_tooling.CliTests.test_cli_show`: after
   `reserve acme --owner acme-corp` and
   `reserve acme-widgets --owner acme-corp`, `show acme` prints
@@ -313,7 +323,8 @@ the `Tools/packagenamespaces/` scripts. `DocsTests` reads doc files.
   `parent: none` / `children: acme-widgets`; `show acme --json`
   parses to the matching mapping.
 - `test.test_pep752_tooling.CliTests.test_cli_show_unknown_fails`:
-  `show acme` on an empty store exits 1 with `unknown` on stderr.
+  `show acme` on an empty store exits 1 with the full phrase
+  `unknown grant` (case-insensitive) on stderr.
 - `test.test_pep752_tooling.CliTests.test_cli_remove`: after
   `reserve acme --owner acme-corp`, `remove acme` prints
   `removed acme` (exit 0); `list` is then empty.
@@ -345,7 +356,11 @@ the `Tools/packagenamespaces/` scripts. `DocsTests` reads doc files.
   "namespaces":[{"name":"acme","owned":True}]}`.
 - `test.test_pep752_tooling.CliTests.test_cli_corrupt_store_fails`:
   a store holding `{not valid json` makes `list` exit 1 with
-  `error` on stderr.
+  `error` on stderr, and so does every value-level corruption below
+  (`main` returns 1 in each case; it never raises):
+  `{"grants": {"acme": 123}}`, `{"grants": {"acme": null}}`,
+  `{"grants": {"acme": ""}}`, `{"projects": {"acme-new": 123}}`,
+  `{"grandfathered": [123]}`, `{"grants": {"bad name!": "acme-corp"}}`.
 - `test.test_pep752_tooling.CliTests.test_cli_register_rejects_empty_owner`:
   `register acme-new --owner ""` exits 1 with `error` on stderr.
 - `test.test_pep752_tooling.CliTests.test_cli_module_entrypoint`:
@@ -353,16 +368,48 @@ the `Tools/packagenamespaces/` scripts. `DocsTests` reads doc files.
   `usage` on stdout (no package import in this test).
 - `test.test_pep752_tooling.HarnessTests.test_gen_fixtures_writes_indexes`:
   `bash gen_fixtures.sh <tmp>` exits 0; `grants.json`,
-  `projects.json`, `grandfathered.json`, `second-index.json` exist,
-  parse as JSON objects, and grants holds >=2 `name`+`owner`
-  entries.
+  `projects.json`, `grandfathered.json`, `second-index.json` exist and
+  parse as JSON objects with these shapes: `grants.json["grants"]` is a
+  list of >=2 mappings each carrying string `name` and `owner` keys;
+  `projects.json["projects"]` is a project-to-owner mapping;
+  `grandfathered.json["grandfathered"]` is a list;
+  `second-index.json` carries a `grants` list and a `projects` mapping.
 - `test.test_pep752_tooling.HarnessTests.test_verify_offline_passes`:
   `bash verify_offline.sh <fixtures>` exits 0 printing
   `verify: all checks passed`.
+- `test.test_pep752_tooling.HarnessTests.test_verify_offline_rejects_missing_fixtures`:
+  fails unless `verify_offline.sh` exists; `bash verify_offline.sh
+  <empty-tmpdir>` then exits nonzero and `verify: all checks passed`
+  is absent from its stdout.
+- `test.test_pep752_tooling.HarnessTests.test_verify_offline_rejects_damaged_fixtures`:
+  fails unless both scripts exist; generates fixtures, then corrupts
+  them two ways -- `grants.json` replaced by `{not valid json`, and
+  `projects.json` replaced by `{}` -- and each corrupted tree makes
+  `verify_offline.sh` exit nonzero with `verify: all checks passed`
+  absent from its stdout.
 - `test.test_pep752_tooling.DocsTests.test_library_page_documents_module`:
   `Doc/library/packagenamespaces.rst` exists and contains
-  `packagenamespaces`, `PEP 752`, `namespaces`, `SecurityPolicy`,
-  `RepositoryIndex`.
+  `packagenamespaces`, `namespaces`, `SecurityPolicy`,
+  `RepositoryIndex`, and either the literal `PEP 752` or the
+  documentation role `:pep:` together with `752`.
+- `test.test_pep752_tooling.DocsTests.test_install_registers_package`:
+  `Makefile.pre.in` names `packagenamespaces` between the `LIBSUBDIRS`
+  and `TESTSUBDIRS` assignments, and
+  `Python/stdlib_module_names.h` holds the `"packagenamespaces"` entry.
+- `test.test_pep752_tooling.InstallTests.test_installed_tree_contains_package`:
+  new class `InstallTests` with `DESTDIR = "/tmp/lambo-destdir"`;
+  `setUpClass` derives the repo root from `__file__`, records the
+  installed stdlib path from the repo's own `./python -c "import
+  sysconfig..."` (subprocess timeout 300, asserts returncode 0), and
+  joins it under `DESTDIR`. The class spawns NO `make` itself: the
+  runner builds and stages the DESTDIR install before the suite starts
+  (rebuilding from inside the suite relinks the running interpreter,
+  which segfaults it). This test asserts
+  `<DESTDIR>/<stdlib>/packagenamespaces/__init__.py` is a file.
+- `test.test_pep752_tooling.InstallTests.test_stdlib_module_names_contains_package`:
+  runs the repo's own `./python` (path joined from the derived root,
+  never `sys.executable`) with `-c "import sys"` and asserts
+  `packagenamespaces` is a member of `sys.stdlib_module_names`.
 - `test.test_pep752_tooling.DocsTests.test_whatsnew_announces_module`:
   `Doc/whatsnew/3.16.rst` contains `packagenamespaces` and `752`.
 - `test.test_pep752_tooling.DocsTests.test_news_entry_exists`: some

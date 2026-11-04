@@ -27,6 +27,7 @@ Foo.bar_BAZ becomes foo-bar-baz
 valid: ASCII letter or digit at both ends
 invalid: empty, leading/trailing separators, spaces, punctuation
 non-string input: normalize_name raises TypeError, is_valid_namespace is False
+names holding newlines, tabs or other control characters are invalid
 TypeError
 ValueError
 hyphen_depth counts hyphens after normalization
@@ -62,6 +63,10 @@ Grant.name
 Grant.owner
 get returns None when ungranted
 parent returns None without a grant
+len of a store counts its active grants
+a namespace string is in a store when its normalized form holds a grant
+parent returns the granted parent name as a string
+children returns the granted child names as a sorted list of strings
 reserve stores the normalized name
 reserve rejects invalid names with InvalidNamespaceError
 reserve rejects empty owners
@@ -75,6 +80,7 @@ overlap allowed only for the overlapping grant's own owner
 same owner may nest grants
 exact duplicate for another owner is rejected
 unknown namespace raises UnknownGrantError on transfer and remove
+transfer that would overlap another owner's grant raises OverlapError
 namespaces returns sorted names
 matching returns sorted grants
 parent is the granted direct parent or None
@@ -98,6 +104,8 @@ GrandfatheredRegistry.add
 GrandfatheredRegistry.discard
 GrandfatheredRegistry.covers
 GrandfatheredRegistry.projects
+len of a registry counts its exempt projects
+a project string is in a registry when its normalized form is exempt
 UploadConflictError.status_code
 UploadConflictError.project
 UploadConflictError.namespace
@@ -109,8 +117,8 @@ normalization runs before the upload check
 ## Repository metadata (metadata)
 
 RepositoryIndex
-API_VERSION = 1.5
-LEGACY_API_VERSION = 1.4
+API_VERSION is the string "1.5"
+LEGACY_API_VERSION is the string "1.4"
 1.5
 1.4
 NotSupportedError
@@ -226,6 +234,9 @@ CONFLICT_EXIT = 3
 exit status 3
 corrupt store exits 1
 empty owner exits 1
+corrupt store message contains error
+empty owner message contains error
+non-string owners or entries in a store exit 1
 
 ## Shell harness (Tools)
 
@@ -238,6 +249,13 @@ gen_fixtures writes grandfathered.json
 gen_fixtures writes second-index.json
 verify_offline takes a fixture directory
 verify_offline exits 0 on success
+verify_offline exits nonzero when fixtures are missing
+verify_offline exits nonzero when fixtures are damaged
+grants.json holds {"grants": [{"name": "<name>", "owner": "<owner>"}]}
+grants.json lists at least two name and owner entries
+projects.json holds {"projects": {"<project>": "<owner>"}}
+grandfathered.json holds {"grandfathered": ["<project>"]}
+second-index.json holds {"grants": [], "projects": {"<project>": "<owner>"}}
 verify: all checks passed
 no network use in either script
 
@@ -250,5 +268,13 @@ Misc/NEWS.d/next/Library/
 NEWS entry mentions packagenamespaces and 752
 whatsnew entry mentions packagenamespaces and 752
 library page mentions PEP 752
+library page names PEP 752 in prose or through the :pep: role
 library page documents SecurityPolicy
 library page documents RepositoryIndex
+
+## Build integration
+
+Makefile.pre.in LIBSUBDIRS lists packagenamespaces
+Python/stdlib_module_names.h lists packagenamespaces
+normal make install ships the new package
+sys.stdlib_module_names contains packagenamespaces

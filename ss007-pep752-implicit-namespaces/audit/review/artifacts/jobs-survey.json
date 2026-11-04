@@ -1,0 +1,21 @@
+{
+  "all_jobs": 1,
+  "jobs_dir": "/home/uldis/cpython/.autopilot/runs/ss007-pep752-implicit-namespaces/pre_push_jobs/6bb02d3b-6200-47f7-bd35-14f767761593",
+  "reward_shape": {
+    "continuous": false,
+    "min_rewards": [],
+    "reward_type": "binary"
+  },
+  "stages": {
+    "codex": {
+      "job": "/home/uldis/cpython/.autopilot/runs/ss007-pep752-implicit-namespaces/pre_push_jobs/6bb02d3b-6200-47f7-bd35-14f767761593/2026-11-04__11-23-43__0615ea",
+      "model": "gpt-6.1-sol",
+      "name": "2026-11-04__11-23-43__0615ea",
+      "passed": 0,
+      "stage": "codex",
+      "total": 0,
+      "trajectories": 1
+    }
+  },
+  "trajectories_total": 1
+}

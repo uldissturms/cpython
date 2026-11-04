@@ -105,6 +105,24 @@ class GrantStoreTests(_ImplementationTests):
         with self.assertRaises(UnknownGrantError):
             store.transfer("foo", "owner-b")
 
+    def test_transfer_conflicting_raises(self):
+        self.require_impl()
+        for names, transferred in (
+            (("foo", "foo-bar"), "foo-bar"),
+            (("foo-bar", "foo"), "foo"),
+        ):
+            with self.subTest(names=names, transferred=transferred):
+                store = GrantStore()
+                for name in names:
+                    store.reserve(name, "owner-a")
+                with self.assertRaises(OverlapError):
+                    store.transfer(transferred, "owner-b")
+                for name in names:
+                    self.assertEqual(store.get(name).owner, "owner-a")
+                for name in names:
+                    store.transfer(name, "owner-a")
+                    self.assertEqual(store.get(name).owner, "owner-a")
+
     def test_reserve_normalizes(self):
         self.require_impl()
         store = GrantStore()
@@ -123,7 +141,7 @@ class GrantStoreTests(_ImplementationTests):
     def test_reserve_rejects_invalid(self):
         self.require_impl()
         store = GrantStore()
-        for name in ("", "-foo", "foo-", "foo!", "foo bar"):
+        for name in ("", "-foo", "foo-", "foo!", "foo bar", "foo\n"):
             with self.subTest(name=name):
                 with self.assertRaises(InvalidNamespaceError):
                     store.reserve(name, "owner-a")

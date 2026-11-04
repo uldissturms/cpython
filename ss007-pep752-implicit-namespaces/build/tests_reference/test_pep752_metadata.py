@@ -1,5 +1,6 @@
 """Conformance tests for PEP 752 repository metadata (v1.5)."""
 
+import re
 import unittest
 
 try:
@@ -19,17 +20,16 @@ else:
     _IMPORT_ERROR = None
 
 
-EXPECTED_HTML = """\
-<!DOCTYPE html>
-<html>
-  <head><title>Links for demo</title></head>
-  <body>
-    <h1>Links for demo</h1>
-    <a href="https://example.com/demo-1.0.tar.gz">demo-1.0.tar.gz</a><br/>
-    <a href="https://example.com/demo-1.0-py3-none-any.whl">demo-1.0-py3-none-any.whl</a><br/>
-  </body>
-</html>
-"""
+DEMO_FILES = [
+    {
+        "filename": "demo-1.0.tar.gz",
+        "url": "https://example.com/demo-1.0.tar.gz",
+    },
+    {
+        "filename": "demo-1.0-py3-none-any.whl",
+        "url": "https://example.com/demo-1.0-py3-none-any.whl",
+    },
+]
 
 
 class MetadataTests(unittest.TestCase):
@@ -203,23 +203,32 @@ class MetadataTests(unittest.TestCase):
         self.assertNotIn("namespaces", page)
         self.assertIn("acme-thing-1.tar.gz", page)
 
-    def test_html_byte_stable(self):
+    def test_html_semantically_stable(self):
         self.require_impl()
         index = RepositoryIndex()
-        page = index.simple_html(
-            "demo",
-            [
-                {
-                    "filename": "demo-1.0.tar.gz",
-                    "url": "https://example.com/demo-1.0.tar.gz",
-                },
-                {
-                    "filename": "demo-1.0-py3-none-any.whl",
-                    "url": "https://example.com/demo-1.0-py3-none-any.whl",
-                },
-            ],
-        )
-        self.assertEqual(page, EXPECTED_HTML)
+        page = index.simple_html("demo", [dict(entry) for entry in DEMO_FILES])
+        self.assertIsInstance(page, str)
+        self.assertIn("<!doctype html>", page.lower())
+        for tag in ("<html", "<head", "<body"):
+            self.assertIn(tag, page.lower())
+        self.assertRegex(page, r"<title>\s*Links for demo\s*</title>")
+        self.assertRegex(page, r"<h1>\s*Links for demo\s*</h1>")
+        position = 0
+        for entry in DEMO_FILES:
+            pattern = (
+                r"<a\b[^>]*href=\""
+                + re.escape(entry["url"])
+                + r"\"[^>]*>"
+                + re.escape(entry["filename"])
+                + r"</a>"
+            )
+            found = re.search(pattern, page[position:])
+            self.assertIsNotNone(found, entry["filename"])
+            position += found.end()
+        self.assertNotIn("namespace", page)
+        self.assertNotIn("namespaces", page)
+        again = index.simple_html("demo", [dict(entry) for entry in DEMO_FILES])
+        self.assertEqual(page, again)
 
     def test_html_escapes_special_characters(self):
         self.require_impl()

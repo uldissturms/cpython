@@ -39,6 +39,7 @@ class NamingTests(unittest.TestCase):
         self.require_impl()
         for name in (
             "foo/bar", "foo@bar", "foo bar", "foo!",
+            "\tfoo", "foo\nbar", "foo\n",
             "_foo", "foo_", ".foo", "foo.", "-foo", "foo-",
             ".", "-", "",
         ):

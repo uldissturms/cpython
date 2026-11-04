@@ -111,5 +111,12 @@ run_control neg subtly_wrong solve "$TASKDIR/build/neg_controls/subtly_wrong"
 # /app/test.py shadowing + /app/Lib/sitecustomize.py startup import, over a
 # broken implementation). Scores 1 on a console-text grader, 0 now.
 run_control neg console_spoof solve "$TASKDIR/build/neg_controls/console_spoof"
+# neg: success-marker spoof (verify_offline.sh replaced by a script that only
+# prints the marker, and the `unknown grant` / `overlaps the grant`
+# diagnostics reworded while keeping the weak `unknown` / `overlap`
+# substrings). Scores 1 on the pre-fix suite (replicates the pre-push
+# reviewer's demonstrated bypass), 0 now that the suite pins the full
+# phrases and probes verify_offline with missing/damaged fixtures.
+run_control neg verify_spoof solve "$TASKDIR/build/neg_controls/verify_spoof"
 # twice: one solved container graded twice.
 run_twice "$STEP"

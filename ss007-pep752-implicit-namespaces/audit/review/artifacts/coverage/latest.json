@@ -1,0 +1,1 @@
+{"d1_state": "MEASURED", "measured_at": "2026-11-04T19-55-37Z", "steps": [{"branch": null, "raw_coverage": 96.7, "reachable_coverage": 98.0, "scope": "golden patch", "step": "1_pep752", "verdict": "PASS"}], "task_snapshot_sha256": "9efbb374adabded02f70791d795e8c541223a90260eb1e0599a9bd419337ec9c", "threshold": 80.0}

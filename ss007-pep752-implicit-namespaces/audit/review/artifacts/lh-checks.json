@@ -1,0 +1,133 @@
+{
+  "difficulty": {
+    "data": {
+      "horizon_local": {
+        "available": false,
+        "metric": "per-trial peak (Gate C basis), not codimango's mean",
+        "raw": {
+          "include_failed": false,
+          "metric": "final_turn_prompt_tokens",
+          "peak_metric": "max_non_synthetic_agent_prompt_tokens",
+          "results": [
+            {
+              "job": null,
+              "model": "avocado",
+              "selection": "latest-job",
+              "source": "local",
+              "trials": []
+            },
+            {
+              "job": null,
+              "model": "claude",
+              "selection": "latest-job",
+              "source": "local",
+              "trials": []
+            },
+            {
+              "job": {
+                "createdAt": "2026-11-04T11:23:44.885212",
+                "id": "2026-11-04__11-23-43__0615ea",
+                "meanReward": null,
+                "modelTotal": 1,
+                "source": "local",
+                "status": "completed",
+                "total": 1
+              },
+              "model": "codex",
+              "selection": "latest-job",
+              "source": "local",
+              "trials": []
+            }
+          ],
+          "source": "local",
+          "task": "6bb02d3b-6200-47f7-bd35-14f767761593"
+        },
+        "reason": "no passing agent trajectory in the local jobs \u2014 an oracle has no agent turns, and a failed rollout has no peak to measure"
+      },
+      "reward_shape": {
+        "continuous": false,
+        "min_rewards": [],
+        "reason": "",
+        "reward_type": "binary",
+        "usable": true
+      },
+      "tool_calls_local": {
+        "reason": "no passing non-oracle rollout, so there is no e2e run whose tool calls Gate C could read",
+        "reward": null,
+        "tool_calls": null,
+        "trial": null
+      }
+    },
+    "findings": [
+      "difficulty: NOT AVAILABLE locally. The platform's number is an Avocado pass rate over a multi-trial cohort; a local run of one or two trials is a different quantity and reporting it would read as a difficulty signal that it is not. Push the task, or accept that this check is unmeasured."
+    ]
+  },
+  "gating": "report only \u2014 no threshold is applied, none has been agreed",
+  "horizon": {
+    "data": {
+      "horizon_local": {
+        "available": false,
+        "metric": "per-trial peak (Gate C basis), not codimango's mean",
+        "raw": {
+          "include_failed": false,
+          "metric": "final_turn_prompt_tokens",
+          "peak_metric": "max_non_synthetic_agent_prompt_tokens",
+          "results": [
+            {
+              "job": null,
+              "model": "avocado",
+              "selection": "latest-job",
+              "source": "local",
+              "trials": []
+            },
+            {
+              "job": null,
+              "model": "claude",
+              "selection": "latest-job",
+              "source": "local",
+              "trials": []
+            },
+            {
+              "job": {
+                "createdAt": "2026-11-04T11:23:44.885212",
+                "id": "2026-11-04__11-23-43__0615ea",
+                "meanReward": null,
+                "modelTotal": 1,
+                "source": "local",
+                "status": "completed",
+                "total": 1
+              },
+              "model": "codex",
+              "selection": "latest-job",
+              "source": "local",
+              "trials": []
+            }
+          ],
+          "source": "local",
+          "task": "6bb02d3b-6200-47f7-bd35-14f767761593"
+        },
+        "reason": "no passing agent trajectory in the local jobs \u2014 an oracle has no agent turns, and a failed rollout has no peak to measure"
+      },
+      "reward_shape": {
+        "continuous": false,
+        "min_rewards": [],
+        "reason": "",
+        "reward_type": "binary",
+        "usable": true
+      },
+      "tool_calls_local": {
+        "reason": "no passing non-oracle rollout, so there is no e2e run whose tool calls Gate C could read",
+        "reward": null,
+        "tool_calls": null,
+        "trial": null
+      }
+    },
+    "findings": [
+      "horizon: tool-call arm unavailable \u2014 no passing non-oracle rollout, so there is no e2e run whose tool calls Gate C could read",
+      "horizon: context arm unavailable \u2014 no passing agent trajectory in the local jobs \u2014 an oracle has no agent turns, and a failed rollout has no peak to measure"
+    ]
+  },
+  "producer": "lh-review-task-beta/lh_checks",
+  "source": "local",
+  "source_note": "measured locally. The working tree does not match any codimango job commit for this task, so the platform's numbers would describe a different tree. These are NOT the numbers codimango will gate on."
+}

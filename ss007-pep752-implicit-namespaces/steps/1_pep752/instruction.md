@@ -14,18 +14,21 @@ Human-readable detail prints `name: <name>`, `owner: <owner>`, `parent: <parent>
 Lookup failure means show unknown exits 1 with a message containing `unknown grant`.
 An overlapping reservation means reserve overlap exits 1 with a message containing `overlaps the grant`.
 A permitted upload means check-upload allowed exits 0 while a denied upload means check-upload denied exits 3 with 409 Conflict.
-Name that failure signal `CONFLICT_EXIT = 3` so scripts observe exit status 3.
+`CONFLICT_EXIT = 3` so scripts observe exit status 3.
 A damaged store means corrupt store exits 1 and a missing owner means empty owner exits 1.
+Failures follow `corrupt store message contains error` and `empty owner message contains error`.
+Validation means non-string owners or entries in a store exit 1.
 
 Normalize every name through `normalize_name`, validate through `is_valid_namespace`, and measure nesting through `hyphen_depth`.
 Runs of `-`, `_`, and `.` fold to one `-` with lowercase output so that `Foo.bar_BAZ becomes foo-bar-baz`.
 Names stay valid only with an ASCII letter or digit at both ends.
 Empty names, edge separators, spaces, and punctuation stay invalid.
+Control handling means names holding newlines, tabs or other control characters are invalid.
 Non-string input makes `normalize_name` raise `TypeError` and makes `is_valid_namespace` return `False`.
 Depth counts hyphens after normalization.
 
 Decide project membership with `namespace_matches`, which succeeds on an exact match or starts with the namespace followed by a hyphen.
-For example `foo matches foo-bar, not foobar`.
+`foo matches foo-bar, not foobar`.
 Matching uses both inputs normalized before comparison.
 
 Model ownership with `Grant` records held in a `GrantStore`, where `Grant.name` carries the normalized namespace and `Grant.owner` carries the holder.
@@ -36,13 +39,20 @@ Nesting stays limited since overlap allowed only for the overlapping grant's own
 Cap nesting with `DEFAULT_DEPTH_LIMIT = 3` exposed as `GrantStore.depth_limit`, where `depth_limit None means unlimited`.
 Mutate the store through `GrantStore.reserve`, `GrantStore.transfer`, and `GrantStore.remove`, and inspect it through `GrantStore.get`, `GrantStore.namespaces`, `GrantStore.matching`, `GrantStore.parent`, and `GrantStore.children`.
 Lookups report `get returns None when ungranted` and `parent returns None without a grant`.
+`len of a store counts its active grants`.
+`a namespace string is in a store when its normalized form holds a grant`.
+`parent returns the granted parent name as a string`.
+`children returns the granted child names as a sorted list of strings`.
 Reservation stores the normalized form, rejects invalid names and empty owners, enforces the depth cap, and refuses exact duplicates held by another owner.
 Transfer and removal of unknown namespaces raise `UnknownGrantError`, listings return sorted names and grants, and parent and child links track only direct granted relationships.
+`transfer that would overlap another owner's grant raises OverlapError`.
 
 Gate uploads with `authorize_upload`, which returns `True` when allowed and raises `UploadConflictError` for a stranger under a reserved prefix.
 Conflicts carry `CONFLICT_STATUS = 409` with details on `UploadConflictError.status_code`, `UploadConflictError.project`, `UploadConflictError.namespace`, and `UploadConflictError.owner`, rendering as 409 Conflict.
 An owner under its own grant, an unreserved project, and a grandfathered project touched by a stranger all pass.
 Track legacy exceptions in a `GrandfatheredRegistry` managed through `GrandfatheredRegistry.add`, `GrandfatheredRegistry.discard`, `GrandfatheredRegistry.covers`, and `GrandfatheredRegistry.projects`.
+`len of a registry counts its exempt projects`.
+`a project string is in a registry when its normalized form is exempt`.
 Upload checks apply normalization runs before the upload check.
 
 Enforce install decisions with `SecurityPolicy`, configured through `SecurityPolicy.namespaces` and `SecurityPolicy.owner`.
@@ -53,7 +63,7 @@ Scope follows grants are per-repository since a grant on one index confers nothi
 An empty policy owner raises `ValueError` while invalid policy namespaces raise `InvalidNamespaceError`.
 
 Serve repository state through `RepositoryIndex`, reached via `RepositoryIndex.store`, `RepositoryIndex.supports_namespaces`, `RepositoryIndex.grandfathered`, and `RepositoryIndex.api_version`.
-Supporting repositories report version 1.5 through `API_VERSION = 1.5` while legacy repositories report version 1.4 through `LEGACY_API_VERSION = 1.4`.
+Supporting repositories report version 1.5 where `API_VERSION is the string "1.5"` while legacy repositories report version 1.4 where `LEGACY_API_VERSION is the string "1.4"`.
 Manage projects with `RepositoryIndex.register_project`, `RepositoryIndex.project_owner`, and `RepositoryIndex.projects`, where `project_owner returns None when unknown`.
 Describe one project with `RepositoryIndex.project_detail`, returning `{"name": "<project>", "namespaces": null}` when unclaimed and `{"name": "<project>", "namespaces": [{"name": "<namespace>", "owned": true}]}` with `{"name": "<namespace>", "owned": false}` entries where ownership differs.
 Detail output keeps owned flags so `owned is true when the project owner holds the grant` and `owned is false for grandfathered projects`, with `matches sorted by name in project_detail` and `grant removal sets project_detail namespaces to null`.
@@ -64,8 +74,18 @@ Render files with `RepositoryIndex.simple_html` from `{"filename": "<file>", "ur
 Namespace detail normalizes its input, raises `UnknownGrantError` when ungranted, and lists direct children only.
 
 Ship fixture tooling at `Tools/packagenamespaces/gen_fixtures.sh` that takes an output directory and writes `grants.json`, `projects.json`, `grandfathered.json`, and `second-index.json`.
+Fixtures follow `grants.json holds {"grants": [{"name": "<name>", "owner": "<owner>"}]}` and `grants.json lists at least two name and owner entries`.
+Projects follow `projects.json holds {"projects": {"<project>": "<owner>"}}`.
+Exemptions follow `grandfathered.json holds {"grandfathered": ["<project>"]}`.
+Isolation follows `second-index.json holds {"grants": [], "projects": {"<project>": "<owner>"}}`.
 Ship verification at `Tools/packagenamespaces/verify_offline.sh` that takes a fixture directory, exits 0 on success, and prints `verify: all checks passed`.
+Coverage follows `verify_offline exits nonzero when fixtures are missing` and `verify_offline exits nonzero when fixtures are damaged`.
 Scripts keep no network use in either script.
 
 Document the feature in `Doc/library/packagenamespaces.rst`, list that page from `Doc/library/distribution.rst`, note the release in `Doc/whatsnew/3.16.rst`, and add a news fragment under `Misc/NEWS.d/next/Library/`.
-The library page mentions PEP 752 alongside `SecurityPolicy` and `RepositoryIndex` while the news and release notes name `packagenamespaces` and PEP 752.
+Documentation follows `library page names PEP 752 in prose or through the :pep: role` alongside `SecurityPolicy` and `RepositoryIndex` while the news and release notes name `packagenamespaces` and PEP 752.
+
+Build files follow `Makefile.pre.in LIBSUBDIRS lists packagenamespaces`.
+Headers follow `Python/stdlib_module_names.h lists packagenamespaces`.
+Installs follow `normal make install ships the new package`.
+Runtime follows `sys.stdlib_module_names contains packagenamespaces`.
