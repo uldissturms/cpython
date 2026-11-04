@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
     libncurses-dev=6.4+20240113-1ubuntu2.2 \
     libbz2-dev=1.0.8-5.1ubuntu0.1 \
     libreadline-dev=8.2-4build1 \
-    libsqlite3-dev=3.45.1-1ubuntu2.8 \
+    # libsqlite3-dev must match the archive's libsqlite3-0 (rotted apart once: .8 vs .9, apt exit 100 on fresh builds); both Dockerfiles carry identical pins.
+    libsqlite3-dev=3.45.1-1ubuntu2.9 \
     libffi-dev=3.4.6-1build1 \
     liblzma-dev=5.6.1+really5.4.5-1ubuntu0.4 \
     libgdbm-dev=1.23-5.1build1 \

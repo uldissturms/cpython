@@ -198,7 +198,13 @@ only. Evidence: `build/.probe/1_pep752/{base,output}.json`.
   (skeleton-faithful; drift-free by construction). `.dockerignore`
   keeps `sources/` out of the image.
 - Image pins: ubuntu digest + all apt versions verified against the
-  archive (git pin corrected 7.3→7.4 after a live query); CPython via
+  archive (git pin corrected 7.3→7.4 after a live query; Round 5:
+  libsqlite3-dev re-pinned .8→.9 after the archive moved, other 16
+  pins re-verified current the same day via live apt-cache query;
+  Round 6: one documenting comment above the libsqlite3-dev pin in
+  the harness Dockerfile, pin/value-identical, so the record
+  re-stamps the file after round 5's record gap);
+  CPython via
   shallow fetch of base_commit; `make -j4` capped to declared cpus=4;
   memory 8192. System `python3` (3.12) installed for the grader so the
   parser never runs under the agent-owned tree.
@@ -311,3 +317,62 @@ Calibration will judge difficulty and horizon.
   at solved. Missing grades as not-PASSED, so the reward is correct
   in both states; fixing it would mean editing AUTHOR_1P-owned test
   sources. Evidence in `build/.probe/1_pep752/`.
+- Round 5 (REVISION, narrow: two findings from failed PRE_PUSH
+  7b022947): closed both, graded surface byte-identical (no test,
+  config, instruction, solution, or harness file touched).
+  F1 stale apt pins: fresh builds died at apt exit 100
+  (libsqlite3-dev .8 vs libsqlite3-0 .9). Live-queried today's
+  archive for all 17 pins from the pinned ubuntu digest: only
+  sqlite moved, so the fix is a one-line bump .8→.9, mirrored
+  byte-identical into steps/1_pep752/tests/Dockerfile (apt blocks
+  diff-clean). Rejected unpinning (reproducibility is the point of
+  the pins) and bumping blindly without the full 17-pin re-check
+  (same rot class could hide anywhere). Proved with a TRUE fresh
+  build (`taskbuild.sh ... --no-cache`: all RUN layers executed,
+  apt fetched libsqlite3-dev 2.9, delink 0 links, freeze commit)
+  plus solve (exit 0) + graded test.sh in the resulting container:
+  441/441 reward 1.0. Scratch logs under worktree .scratch/,
+  removed after the run.
+  F2 runner scratch in review snapshot: snapshot 4c33f8a tracked
+  runner scratch because the worktree .gitignore lacked the flow's
+  rules. Diagnosed the FULL tracked set, not just the three named:
+  the finding named base.json/output.json/.coverage-build.log but
+  `git ls-files` also showed .controls-build.log + seven
+  build/.evalgt/* files, same never-commit class (the flow's own
+  ensure_gitignore.sh lists `.evalgt/`). `git rm --cached` all 11
+  (files left on disk; no CPython tracked file or rule touched).
+  Appended 9 rules to the WORKTREE ROOT .gitignore (where this
+  task's git repo lives): the flow's six bare forms (.probe/
+  .offline/ .controls/ .coverage/ .preauthor/ __pycache__/) +
+  .evalgt/ + two build-log rules (.*controls*.log,
+  .*coverage*.log) in the flow's existing `.*<name>*.log` family.
+  The two log rules are a diagnosed extension of the finding
+  sketch: the six alone leave build/.coverage-build.log (and its
+  .controls twin) unignored, so the finding's own `git add -A`
+  verification would still sweep them; in the control repo they
+  are covered only by `/*/build/`, which must NOT be copied here
+  (this worktree commits build/ docs legitimately). Verified:
+  `git check-ignore` hits all six scratch classes;
+  `git add -A --dry-run -- <task>` sweeps no scratch. Preserved
+  green: 441/441 solved reward 1 on the fresh image; controls and
+  coverage scripts untouched and interface-identical.
+  run_coverage.sh re-run end-to-end: COVERAGE 1_pep752 95.6 (exit
+  0, threshold 80%); its image is layer-identical to the no-cache
+  proof image (same per-task builder cache entry from the new
+  Dockerfile text) and dpkg-confirms libsqlite3 .9 inside.
+- Round 6 (REVISION, surgical re-stamp): closed the provenance gap
+  on steps/1_pep752/tests/Dockerfile. Round 5 re-entered via start
+  --phase BUILD, which snapshots no harness base, so its legit .8→.9
+  pin bump was never stamped and gate_provenance flagged the file
+  as "modified after authoring". Fix is one documenting comment
+  directly above the libsqlite3-dev pin (pin requirement + .8/.9
+  rot history + identical-pins note); no pin value, package list,
+  or build behavior changed. Verified: diff vs round 5 shows ONLY
+  the added line; TRUE fresh build (taskbuild.sh --no-cache,
+  tag ss007-r6-proof:v1) green end to end (apt fetched 2.9, 75
+  shared extensions, freeze commit, dpkg-confirms 2.9, tree clean).
+  environment/Dockerfile and all test/config/instruction files
+  untouched. New sha256 of the harness Dockerfile:
+  87db6dd5e9d865e1d0298f7e938b1277be9d02a0c6578aa46b86fe33b84b1c3d.
+  Scratch (round-5 snapshot, probe + proof logs) under
+  /home/uldis/cpython/.scratch/ss007-r6/.
