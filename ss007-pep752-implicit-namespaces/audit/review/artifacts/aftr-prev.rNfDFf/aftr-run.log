@@ -1,0 +1,4 @@
+Need help with a bug or blocked workflow? Run `codimango feedback`.
+prompt: manifold:aai_eval_baselines/tree/agentic-review-resources/prompts (sha256=12a7e6acf75b), rubrics: yes, agent: codex, model: gpt-6.1-sol, tier: container
+2026-11-05 01:23:30,758  WARNING codimango.py:140 codimango exited 1; checking <PosixPath> for a review anyway
+error: no review.xml containing <task_quality_review> under /tmp/lh-aftr.LgomGl/agentic-review-cli-jyumod_n/jobs/2026-11-05__01-17-17__d2d736 — check the reviewer had a shell tool, the mount was visible, and the turn budget was enough

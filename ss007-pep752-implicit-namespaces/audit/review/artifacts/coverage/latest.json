@@ -1,4 +1,1 @@
-{"threshold": 80.0, "d1_state": "MEASURED", "measured_at": "2026-11-05T07-00-51Z",
- "task_snapshot_sha256": "4ca91cfb4e8e5c116456be17cfad2215d12504ba373da1bcd9a6981cb6f7b904",
- "steps": [{"step": "1_pep752", "scope": "golden patch", "raw_coverage": 95.6,
-            "branch": null, "reachable_coverage": 96.8, "verdict": "PASS"}]}
+{"threshold": 80.0, "d1_state": "MEASURED", "measured_at": "2026-11-05T10:07:29Z", "task_snapshot_sha256": "5a8e3725fb3386972d0ce3f0693d3c0cd97822f3c9a11e5c35277a6c5c45ead4", "steps": [{"step": "1_pep752", "scope": "golden patch", "raw_coverage": 95.6, "branch": null, "reachable_coverage": 96.8, "verdict": "PASS"}]}

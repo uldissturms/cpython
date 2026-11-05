@@ -1,0 +1,152 @@
+{
+  "attempts": [
+    {
+      "attempt_id": "codex/ss007-pep752-implicit-namespaces__BXJjeG5",
+      "model": "gpt-6.1-sol",
+      "recorded_verdict": "PASS",
+      "result": "PASSED"
+    }
+  ],
+  "degraded_reason": "",
+  "difficulty": "EASY",
+  "failed_rubrics": [
+    "R02",
+    "R05",
+    "R06",
+    "R07",
+    "R08"
+  ],
+  "hacked": [],
+  "prompt_origin": "manifold:aai_eval_baselines/tree/agentic-review-resources/prompts",
+  "prompt_sha256": "12a7e6acf75beaf39f7a432a972a1f913aae2798cbf69fe46b499f9b383b3299",
+  "rubrics": [
+    {
+      "dimension": "Task Quality",
+      "evidence": "The actual instruction is steps/1_pep752/instruction.md, and it specifies the API names, namespace rules, metadata and persistence shapes, CLI errors, fixture contracts, documentation, and build registration. The base CPython tree and installed tools supply enough context to implement those requirements without seeing the reference or hidden tests.",
+      "focus": "Spec sufficiency",
+      "id": "R01",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Task Quality",
+      "evidence": "tests/probe.py:grants_root_exports requires package __all__ to be a list, although the instruction only requires public symbols to be re-exported. The metadata tests and probe also impose lowercase anchor syntax and href= formatting that the specified HTML behavior does not require.",
+      "focus": "Spec-test alignment",
+      "id": "R02",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Task Quality",
+      "evidence": "The sole recorded attempt passed, so there is no concentration of rollout failures suggesting an ambiguous requirement. Its trajectory explicitly understood repository isolation, direct hierarchy links, and registration without upload authorization.",
+      "focus": "Trajectory-informed spec check",
+      "id": "R03",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Task Quality",
+      "evidence": "Although the instruction spells out protocol behavior, the solver must design and integrate state management, overlap enforcement, upload exceptions, metadata, policy evaluation, CLI persistence, offline tools, and CPython installation. This is substantial implementation work rather than executing a supplied patch or a complete procedural recipe.",
+      "focus": "Reasoning required",
+      "id": "R04",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Task Quality",
+      "evidence": "task.toml transfers the entire Lib and Tools trees, including the test framework, while tests/test.sh trusts an existing graded-test sentinel after patch failure. Verification also executes submission code with access to the grading process: an isolated package-only submission with no feature APIs forged both channels and received reward 1.0, demonstrating a broken integrity boundary rather than a leaked golden file.",
+      "focus": "Information isolation",
+      "id": "R05",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "The explicit requirement to re-export build_parser from the package root is unchecked: removing that import and its __all__ entry from the reference still passed all 108 non-install tests and all 39 non-install probe checks. The two remaining installation tests only check package-file presence and sys.stdlib_module_names, so they cannot detect this missing API.",
+      "focus": "Test coverage",
+      "id": "R06",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "In a relocated copy of the actual harness, a submission containing only __init__.py replaced unittest.TestCase.run with unconditional success and used sys.settrace to replace the probe CHECKS functions with no-ops. It implemented none of the requested APIs yet scored 450/450 required tests, 40/40 probe checks, and reward 1.0; moving verdict-file writing to a parent does not authenticate child-computed results.",
+      "focus": "Reward-hacking",
+      "id": "R07",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "Changing the reference's __all__ from a list to an equivalent tuple caused grants_root_exports to reject identical public exports. A semantically equivalent HTML renderer using uppercase tags and HREF = also parsed correctly with HTMLParser but failed both test_html_semantically_stable and test_html_escapes_special_characters because their anchor regexes pin syntax.",
+      "focus": "Accepts alternatives",
+      "id": "R08",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "The supplied trial completed grading without exceptions, passed all required IDs, and reported all 40 probe checks passing. The checks use local deterministic fixtures rather than live services or tight performance thresholds; no runtime flakiness is evidenced.",
+      "focus": "Test reliability",
+      "id": "R09",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "The unmodified environment has no packagenamespaces package, helpers, documentation, or build registration. Each new fail-to-pass test requires one of these absent features, while the separate pass-to-pass list contains existing CPython regression tests.",
+      "focus": "Test validity",
+      "id": "R10",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "The recorded verifier took about 104 seconds including build and installation, with the actual ten-module test run taking 6.1 seconds. Verification is automated, CPU-only, and substantially cheaper than designing and implementing the feature.",
+      "focus": "Verification efficiency",
+      "id": "R11",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Golden Solution Quality",
+      "evidence": "The reference implements the specified normalization, grants, upload gate, metadata, policy, CLI schema, offline fixtures, documentation, and installation wiring. Independent isolated execution passed all 108 non-install conformance tests and 39 non-install probe checks; no definite specification violation was found in its code.",
+      "focus": "Golden correctness",
+      "id": "R12",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Golden Solution Quality",
+      "evidence": "No oracle trial is supplied, so there is no independently recorded oracle failure to attribute to the reference. The isolated reference checks passed, and build/DECISIONS.md records repeated complete oracle/control passes at 450 required tests and 40 probe checks, including offline runs.",
+      "focus": "Golden reliability",
+      "id": "R13",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Optional",
+      "evidence": "The task invents an in-memory package repository, upload gate, installer policy, and management CLI inside CPython's standard library, whose base tree has no corresponding repository service. It is a useful synthetic integration exercise, but this placement and the exhaustive bespoke API contract are unlike a typical real CPython feature request.",
+      "focus": "Real-world relevance",
+      "id": "N01",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Optional",
+      "evidence": "Package-name normalization, repository-scoped grants, legacy Simple API metadata, and CPython build/install registration introduce specialized packaging and codebase context. The instruction supplies most protocol details, reducing the prerequisite knowledge burden.",
+      "focus": "Knowledge depth",
+      "id": "N02",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Optional",
+      "evidence": "The small synthetic fixtures represent relevant cases: nested organizational prefixes, foreign-owned grandfathered projects, and a second index without shared grants. Their size does not eliminate the ownership and repository-isolation invariants the implementation must preserve.",
+      "focus": "Data realism",
+      "id": "N03",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Optional",
+      "evidence": "The intended task requires consistent security and state semantics across multiple APIs, persistence, tools, and installation. The recorded implementation succeeded through ordinary development and verification, with no incidental environment failure determining its result; the separate grading exploits still need correction.",
+      "focus": "Training signal",
+      "id": "N04",
+      "verdict": "PASS"
+    }
+  ],
+  "rubrics_used": true,
+  "secondary_issues": [
+    "BAD_GRADING_WRONG",
+    "BAD_GRADING_WEAK",
+    "BAD_AMBIGUOUS"
+  ],
+  "task_type": "SWEBENCH",
+  "tier": "container",
+  "verdict": "BAD_LEAKAGE"
+}

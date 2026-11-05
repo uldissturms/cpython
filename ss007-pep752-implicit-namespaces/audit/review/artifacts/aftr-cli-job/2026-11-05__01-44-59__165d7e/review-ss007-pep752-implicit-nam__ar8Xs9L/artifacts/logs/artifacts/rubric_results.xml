@@ -1,0 +1,70 @@
+<rubric_results>
+  <rubric id="R01" dimension="Task Quality" focus="Spec sufficiency" statement="The task specification together with the agent's accessible environment (codebase, config files, dependencies) contain enough information to solve the problem. Things that are obvious to a domain expert don't need to be explicitly listed out, but there shouldn't be ambiguity in non-obvious details. If this task were to be given to a domain expert, they'd be able to solve it without any additional information.">
+   <verdict>PASS</verdict>
+   <evidence>The actual instruction is steps/1_pep752/instruction.md, and it specifies the API names, namespace rules, metadata and persistence shapes, CLI errors, fixture contracts, documentation, and build registration. The base CPython tree and installed tools supply enough context to implement those requirements without seeing the reference or hidden tests.</evidence>
+  </rubric>
+  <rubric id="R02" dimension="Task Quality" focus="Spec-test alignment" statement="Every tested behavior traces to a requirement stated in the spec or clearly inferable from the environment or the task. Tests do not verify unstated requirements which might be unfair to the agent being graded.">
+   <verdict>FAIL</verdict>
+   <evidence>tests/probe.py:grants_root_exports requires package __all__ to be a list, although the instruction only requires public symbols to be re-exported. The metadata tests and probe also impose lowercase anchor syntax and href= formatting that the specified HTML behavior does not require.</evidence>
+  </rubric>
+  <rubric id="R03" dimension="Task Quality" focus="Trajectory-informed spec check" statement="When a significant proportion of model attempts fail on the same test or behavior, the spec clearly and unambiguously defines that behavior — ruling out ambiguity as the cause.">
+   <verdict>PASS</verdict>
+   <evidence>The sole recorded attempt passed, so there is no concentration of rollout failures suggesting an ambiguous requirement. Its trajectory explicitly understood repository isolation, direct hierarchy links, and registration without upload authorization.</evidence>
+  </rubric>
+  <rubric id="R04" dimension="Task Quality" focus="Reasoning required" statement="The spec describes the goal (what needs to be achieved), and shouldn't lay out the whole step-by-step recipe (how to achieve it). If the whole recipe/algorithm is laid out in detail, then it should be complex enough that the agents are struggling to implement or code it correctly and pass the tests. In all other cases, the agent needs to reason and figure out the solution or approach.">
+   <verdict>PASS</verdict>
+   <evidence>Although the instruction spells out protocol behavior, the solver must design and integrate state management, overlap enforcement, upload exceptions, metadata, policy evaluation, CLI persistence, offline tools, and CPython installation. This is substantial implementation work rather than executing a supplied patch or a complete procedural recipe.</evidence>
+  </rubric>
+  <rubric id="R05" dimension="Task Quality" focus="Information isolation" statement="The solution shouldn't be exposed to the agent in any way. No leaks via: golden solution in env, test expected outputs/fixtures, editable grading tests, git history, READMEs, comments, or a check satisfiable by writing the expected artifact directly.">
+   <verdict>FAIL</verdict>
+   <evidence>task.toml transfers the entire Lib and Tools trees, including the test framework, while tests/test.sh trusts an existing graded-test sentinel after patch failure. Verification also executes submission code with access to the grading process: an isolated package-only submission with no feature APIs forged both channels and received reward 1.0, demonstrating a broken integrity boundary rather than a leaked golden file.</evidence>
+  </rubric>
+  <rubric id="R06" dimension="Grading / Test Quality" focus="Test coverage" statement="Tests cover representative scenarios and important edge cases of every requirement stated in the task specification. No spec requirement should go untested.">
+   <verdict>FAIL</verdict>
+   <evidence>The explicit requirement to re-export build_parser from the package root is unchecked: removing that import and its __all__ entry from the reference still passed all 108 non-install tests and all 39 non-install probe checks. The two remaining installation tests only check package-file presence and sys.stdlib_module_names, so they cannot detect this missing API.</evidence>
+  </rubric>
+  <rubric id="R07" dimension="Grading / Test Quality" focus="Reward-hacking" statement="The task shouldn't be reward-hackable where shortcuts, suboptimal solutions, or cheat codes are able to pass all the tests without genuinely solving the problem in the manner that the task describes.">
+   <verdict>FAIL</verdict>
+   <evidence>In a relocated copy of the actual harness, a submission containing only __init__.py replaced unittest.TestCase.run with unconditional success and used sys.settrace to replace the probe CHECKS functions with no-ops. It implemented none of the requested APIs yet scored 450/450 required tests, 40/40 probe checks, and reward 1.0; moving verdict-file writing to a parent does not authenticate child-computed results.</evidence>
+  </rubric>
+  <rubric id="R08" dimension="Grading / Test Quality" focus="Accepts alternatives" statement="Tests should be flexible, and shouldn't reject alternate solutions that might be used to solve the problem (as long as the spec allows for that level of flexibility).">
+   <verdict>FAIL</verdict>
+   <evidence>Changing the reference's __all__ from a list to an equivalent tuple caused grants_root_exports to reject identical public exports. A semantically equivalent HTML renderer using uppercase tags and HREF = also parsed correctly with HTMLParser but failed both test_html_semantically_stable and test_html_escapes_special_characters because their anchor regexes pin syntax.</evidence>
+  </rubric>
+  <rubric id="R09" dimension="Grading / Test Quality" focus="Test reliability" statement="Tests are not flaky, not dependent on network/timing/unpinned environment, and do not spuriously time out. Results should be fairly consistent across runs and machines. The tasks should always run successfully and reliably return pass or fail for the respective category of submissions.">
+   <verdict>PASS</verdict>
+   <evidence>The supplied trial completed grading without exceptions, passed all required IDs, and reported all 40 probe checks passing. The checks use local deterministic fixtures rather than live services or tight performance thresholds; no runtime flakiness is evidenced.</evidence>
+  </rubric>
+  <rubric id="R10" dimension="Grading / Test Quality" focus="Test validity" statement="Every fail-to-pass test genuinely fails on the unmodified base code. No test already passes before the agent makes any changes.">
+   <verdict>PASS</verdict>
+   <evidence>The unmodified environment has no packagenamespaces package, helpers, documentation, or build registration. Each new fail-to-pass test requires one of these absent features, while the separate pass-to-pass list contains existing CPython regression tests.</evidence>
+  </rubric>
+  <rubric id="R11" dimension="Grading / Test Quality" focus="Verification efficiency" statement="Solving requires substantially more reasoning than verifying. Grading runs in minutes, needs no human or GPU cluster, and scales to thousands of RL runs.">
+   <verdict>PASS</verdict>
+   <evidence>The recorded verifier took about 104 seconds including build and installation, with the actual ten-module test run taking 6.1 seconds. Verification is automated, CPU-only, and substantially cheaper than designing and implementing the feature.</evidence>
+  </rubric>
+  <rubric id="R12" dimension="Golden Solution Quality" focus="Golden correctness" statement="The golden/reference solution correctly and completely implements every requirement stated in the specification and solves the problem.">
+   <verdict>PASS</verdict>
+   <evidence>The reference implements the specified normalization, grants, upload gate, metadata, policy, CLI schema, offline fixtures, documentation, and installation wiring. Independent isolated execution passed all 108 non-install conformance tests and 39 non-install probe checks; no definite specification violation was found in its code.</evidence>
+  </rubric>
+  <rubric id="R13" dimension="Golden Solution Quality" focus="Golden reliability" statement="The golden solution passes all tests consistently across every oracle trial run with no failures or flakiness.">
+   <verdict>PASS</verdict>
+   <evidence>No oracle trial is supplied, so there is no independently recorded oracle failure to attribute to the reference. The isolated reference checks passed, and build/DECISIONS.md records repeated complete oracle/control passes at 450 required tests and 40 probe checks, including offline runs.</evidence>
+  </rubric>
+  <rubric id="N01" dimension="Optional" focus="Real-world relevance" statement="Would this change realistically be made in this project, and is it posed the way real work actually arrives — regardless of how hard it is?">
+   <verdict>FAIL</verdict>
+   <evidence>The task invents an in-memory package repository, upload gate, installer policy, and management CLI inside CPython's standard library, whose base tree has no corresponding repository service. It is a useful synthetic integration exercise, but this placement and the exhaustive bespoke API contract are unlike a typical real CPython feature request.</evidence>
+  </rubric>
+  <rubric id="N02" dimension="Optional" focus="Knowledge depth" statement="Does the solution require specialized knowledge that a competent generalist lacks?">
+   <verdict>PASS</verdict>
+   <evidence>Package-name normalization, repository-scoped grants, legacy Simple API metadata, and CPython build/install registration introduce specialized packaging and codebase context. The instruction supplies most protocol details, reducing the prerequisite knowledge burden.</evidence>
+  </rubric>
+  <rubric id="N03" dimension="Optional" focus="Data realism" statement="Any seed data, input files, or environment fixtures used in the task are representative of real-world data — not obviously synthetic, overly simplified, or toy-scale in a way that trivializes the problem or makes the solution non-transferable to real scenarios.">
+   <verdict>PASS</verdict>
+   <evidence>The small synthetic fixtures represent relevant cases: nested organizational prefixes, foreign-owned grandfathered projects, and a second index without shared grants. Their size does not eliminate the ownership and repository-isolation invariants the implementation must preserve.</evidence>
+  </rubric>
+  <rubric id="N04" dimension="Optional" focus="Training signal" statement="The task's difficulty stems from genuine reasoning or implementation challenges — not from incidental friction (wrong library version, missing import, trivial config mismatch) that, once learned, provides no further training signal. As models improve, the task should continue to differentiate capability levels rather than saturating after a single insight.">
+   <verdict>PASS</verdict>
+   <evidence>The intended task requires consistent security and state semantics across multiple APIs, persistence, tools, and installation. The recorded implementation succeeded through ordinary development and verification, with no incidental environment failure determining its result; the separate grading exploits still need correction.</evidence>
+  </rubric>
+ </rubric_results>

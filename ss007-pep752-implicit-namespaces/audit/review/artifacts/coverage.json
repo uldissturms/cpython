@@ -1,4 +1,4 @@
-{"method": {"backend": "py_trace_cov.sh v2 (stdlib trace LCOV; test.sh pre-run for InstallTests)", "caveat": "line-only backend: branch n/a; entrypoint subprocess-blind but tested; C header unmeasured but asserted"},
+{"method": {"backend": "py_trace_cov.sh (rung-2 stdlib-trace LCOV; run_script.sh-equivalent build+install staging, 6 pep752 modules traced, 110/110 green)", "caveat": "line-only backend: branch n/a; entrypoint subprocess-blind but tested; C header unmeasured but asserted; p2p/probe channels untraced"},
  "steps": [{"step": "1_pep752", "lines_total": 545, "lines_hit": 521,
             "line_pct": 95.6, "branch_pct": null,
             "reachable_ceiling_pct": 96.8, "state": "MEASURED"}]}

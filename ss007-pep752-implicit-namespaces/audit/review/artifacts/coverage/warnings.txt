@@ -1,3 +1,4 @@
-entrypoint blind spot: tests shell out to 'python -m packagenamespaces' in a
-subprocess the stdlib trace module cannot follow, so __main__.py lines read 0
-even when the entrypoint test passes. Line-only backend: branch % n/a.
+line-only trace backend: no branch data (br% n/a).
+subprocess-blind: CLI entrypoint lines driven via `python -m packagenamespaces` children read 0.
+pass_to_pass modules (test_ensurepip, test_venv) not run: baseline guards, cannot cover the new package.
+independent probe.py channel not traced: exercises the same lines as the suite.
