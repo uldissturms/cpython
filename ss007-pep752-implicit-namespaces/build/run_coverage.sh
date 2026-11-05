@@ -40,6 +40,17 @@ docker exec "$CID" bash /solution/solve.sh >/dev/null 2>&1 || {
 # Install the graded tests the same way test.sh does.
 docker exec "$CID" bash /tests/test.sh >/dev/null 2>&1 || true
 
+# test.sh hands the repo to nobody (grade-time privilege separation), but the
+# coverage diff below runs as root: git cannot resolve the base object in a
+# foreign-owned tree ("error: Could not access '<sha>'", exit 1), so the
+# harness would die before printing COVERAGE. This container stages only the
+# golden patch and the graded tests -- nothing adversarial -- so restore the
+# pre-grade ownership before diffing.
+docker exec "$CID" chown -R root:root /app >/dev/null 2>&1 || {
+    echo "run_coverage: cannot restore repo ownership" >&2
+    exit 1
+}
+
 docker exec -i "$CID" ./python - "$BASE" "$STEP" <<'PY'
 import subprocess
 import sys
