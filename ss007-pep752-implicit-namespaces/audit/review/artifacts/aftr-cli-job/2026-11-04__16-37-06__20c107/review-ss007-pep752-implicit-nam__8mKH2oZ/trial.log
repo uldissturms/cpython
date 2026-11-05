@@ -1,0 +1,266 @@
+Skipping image OS validation for hb__e310b8941a657b9ff119811180d4fdc1: docker inspect returned 1
+Installing system packages as root
+Running command: if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1 && command -v curl >/dev/null 2>&1 && command -v bash >/dev/null 2>&1 && command -v rg >/dev/null 2>&1; then  echo 'All required tools already present; skipping pkg install';  exit 0;fi; if command -v apk >/dev/null 2>&1; then  apk update && apk add --no-cache curl bash nodejs npm ripgrep && exit 0;  echo 'apk install failed; retrying after 5s' >&2;  sleep 5;  apk update && apk add --no-cache curl bash nodejs npm ripgrep && exit 0;  echo 'apk install failed after retry — env may have no repo access' >&2;  echo "__HARBOR_ALPINE""_APK_INCOMPAT__";  echo "__HARBOR_ALPINE""_APK_INCOMPAT__" >&2;  exit 100;elif command -v apt-get >/dev/null 2>&1; then  apt-get update && apt-get install -y curl ripgrep && exit 0;  echo 'apt-get install failed; retrying after 5s' >&2;  sleep 5;  apt-get update && apt-get install -y curl ripgrep && exit 0;  if ( set +o pipefail; LC_ALL=C apt-get update 2>&1 | { answered=1; while IFS= read -r line; do case "$line" in Hit:*|Get:*) answered=0;; esac; done; exit "$answered"; } ); then    echo 'apt-get install failed after retry, but the package index is readable — treating as transient' >&2;    exit 1;  fi;  echo 'apt-get install failed after retry — env may have no repo access' >&2;  echo "__HARBOR_PKG""_REPO_UNREACHABLE__";  echo "__HARBOR_PKG""_REPO_UNREACHABLE__" >&2;  exit 100;elif command -v yum >/dev/null 2>&1; then  yum install -y curl ripgrep && exit 0;  echo 'yum install failed; retrying after 5s' >&2;  sleep 5;  yum install -y curl ripgrep && exit 0;  if ( set +o pipefail; if command -v dnf >/dev/null 2>&1; then [ -n "$(dnf -q --refresh '--setopt=*.skip_if_unavailable=True' repoquery --available 2>/dev/null)" ]; else LC_ALL=C yum -q clean expire-cache >/dev/null 2>&1; LC_ALL=C yum -q '--setopt=*.skip_if_unavailable=True' makecache >/dev/null 2>&1 && LC_ALL=C yum -q '--setopt=*.skip_if_unavailable=True' repolist enabled 2>/dev/null | { listed=1; while read -r line || [ -n "$line" ]; do status=${line##*[[:space:]]}; status=${status%%+*}; case "$status" in ""|*[!0-9,]*) ;; *[1-9]*) listed=0;; esac; done; exit "$listed"; }; fi ); then    echo 'yum install failed after retry, but the package index is readable — treating as transient' >&2;    exit 1;  fi;  echo 'yum install failed after retry — env may have no repo access' >&2;  echo "__HARBOR_PKG""_REPO_UNREACHABLE__";  echo "__HARBOR_PKG""_REPO_UNREACHABLE__" >&2;  exit 100;else  echo 'No known package manager found; assuming required tools present' >&2;fi
+Command outputs captured
+System packages installed in 11.6s
+Installing codex
+Running command: set -euo pipefail; mkdir -p /opt/harbor-codex/nvm /opt/harbor-codex/bin /usr/local/bin && if ldd --version 2>&1 | grep -qi musl || [ -f /etc/alpine-release ]; then npm install -g --prefix /opt/harbor-codex/npm @openai/codex@latest; else export NVM_DIR=/opt/harbor-codex/nvm; curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash && . "$NVM_DIR/nvm.sh" --no-use && command -v nvm >/dev/null && nvm install 22 && nvm alias default 22 && npm -v && npm install -g --prefix /opt/harbor-codex/npm @openai/codex@latest; fi && { node_bin="$(command -v node)" && ln -sf "$node_bin" /opt/harbor-codex/bin/node && ln -sf /opt/harbor-codex/npm/bin/codex /opt/harbor-codex/bin/codex && chmod -R a+rX /opt/harbor-codex && printf '%s' '#!/bin/sh
+export PATH=/opt/harbor-codex/bin:"$PATH"
+exec /opt/harbor-codex/bin/codex "$@"
+' > /usr/local/bin/codex.harbor-install && chmod 755 /usr/local/bin/codex.harbor-install && mv -f /usr/local/bin/codex.harbor-install /usr/local/bin/codex && /usr/local/bin/codex --version; }
+Command outputs captured
+Codex installed in 10.8s
+Running command: mkdir -p "$CODEX_HOME" /tmp/codex-secrets /logs/agent
+Command outputs captured
+[REDACTED sensitive log record]
+[REDACTED sensitive log record]
+Command outputs captured
+[REDACTED sensitive log record]
+Command outputs captured
+Running command: printf '%s' 'Your task is to perform a **thorough quality review** of a coding RL task — its specification, its golden (reference) solution, and its tests/grading — and to **analyze a set of model rollout attempts** at solving the task.
+From this you will judge:
+1. Whether the task is **GOOD or BAD** to use for training/evaluation.
+2. How **difficult** the task genuinely is.
+3. For **each model attempt**, what category of result it represents.
+You will also write **actionable feedback** for the person who authored the task. No feedback needs to be provided if the task is GOOD.
+You have full access to the filesystem and can run commands. Use `cat`, `grep`, `find`, `ls`, `jq`, `python3`, and any other tools to explore the task source files, golden solution, grading harness, and prior trial artifacts.
+# General Instructions
+- Reach your conclusions by **reading and reasoning over the provided files**. You can also run code to inspect build output, run linters, or verify test assertions if needed.
+- Work autonomously. You cannot ask the user questions — gather everything you need by reading files and running commands.
+- In your last turn, output the final review in the format specified below (Output Format).
+# Input Context
+You are reviewing a single coding RL task, which is of either the SWE-bench-like or the Terminal-bench-like family. You have three sources of information:
+## `/app/` — The Task Environment
+This is the environment that the solving agents ran in. It was built from the task'"'"'s Dockerfile and contains whatever the solving agent had access to at runtime — the codebase, installed dependencies, configuration files, etc. For SWE-bench tasks, this typically includes a cloned repository checked out to a specific commit.
+**Explore this directory** to understand the world the solving agent operated in. The solving agent could read, edit, and run anything here. This is critical for judging solvability and information leakage — if a file is accessible here, the agent could have read it.
+Note: some files at the `/app/` root level (like `instruction.md`, `tests/`, `solution/`) are placeholders used by the benchmarking framework and do NOT reflect what the solving agent saw. The real task files are in `/app/taskfiles/definition/` (see below).
+## `/app/taskfiles/definition/`
+The task'"'"'s source-of-truth files:
+- `instruction.md` — task specification (what the solving agent is told to do)
+- `task.toml` — task metadata
+- `solution/` — contains a solve.sh (or code_patch.diff) — golden/reference solution
+- `tests/` — test suite / grading harness, including `test.sh`
+- Other task-specific files (README.md, etc.)
+For SWE-bench-like tasks, also expect `test_patch.diff`, a test command, and a test list (fail-to-pass / pass-to-pass tests).
+Important to note, the solving agent did NOT have access to ANY files under /app/taskfiles/definitions/ except the Instructions.md file content for single-step harbor tasks. For multi-step harbor tasks, it only had access to the content of Instructions.md files under /app/taskfiles/definitions/steps/<N> dirs.
+## `/app/taskfiles/trials/`
+Independent attempts by various models to solve this exact task:
+**The top-level folders are DISPATCH STAGES (oracle, agent, codex, metacode, ...), NOT model names.** The actual model behind each stage is in `trials/manifest.json`, a `{stage: model}` map in the shape `{"agent": "<claude model>", "codex": "<gpt model>", "metacode": "<avocado model>", "oracle": "oracle"}` (placeholders; the real values are generated live from each run and are whatever model actually ran, so read them from the file and do not assume specific versions). If `manifest.json` is missing, each trial'"'"'s `trajectory.json` carries the model at `agent.model_name`. When you refer to an attempt'"'"'s model anywhere in the review (see the output format), **use the real model from `manifest.json`, then the trajectory. Only if neither source exists, use the stage folder name as a last resort.**
+```
+trials/
+ manifest.json                 — {stage: model} map (the real model per stage; prefer this)
+ oracle/
+   <trial-id>/
+     result.json               — verifier verdict, reward, exception info
+     trajectory.json           — agent'"'"'s step-by-step actions
+     test-stdout.txt           — test execution output
+     trial.log                 — execution log
+     exception.txt             — exception details (if errored)
+     agent/                    — agent-specific logs
+     sessions/                 — session event logs (.jsonl)
+ opus/
+   <trial-id>/
+     ...
+ metacode/
+   ...
+ codex/
+   ...
+```
+Each trial directory generally contains the attempted solution (or resulting state), the recorded verdict, and the trajectory/logs. **Do not assume exact filenames.** List the contents of each trial directory and read whatever is there. The recorded verdict tells you what the grader concluded; your job is to decide whether that conclusion is *legitimate* and to classify *why* each trial ended the way it did.
+## `/app/taskfiles/rubrics.jsonl` — Evaluation Rubrics
+A JSONL file containing the rubrics to evaluate this task against. Each line is a JSON object with: `id`, `category`, `focus`, `rubric` (description), `verdict` (PASS or FAIL — to be filled by the agent), `required` (boolean), `fail_verdict`. Read this at the start of Stage 5.
+**Note — what the agent sees vs. what you see.** At training time the agent has only the task environment — the instruction plus the files/repo it works in — and can read, edit, and run anything in it. The golden solution, the grading tests, the recorded verdicts, and the other models'"'"' attempts are given to you for review only; the agent does not get them unless a copy happens to sit inside its environment. So (a) judge solvability and ambiguity from the agent'"'"'s view only — don'"'"'t let your knowledge of the golden make a vague instruction look clear; and (b) first work out which files are actually readable/editable inside the agent'"'"'s environment (tasks differ in whether they ship or hide the tests) — anything answer-revealing reachable from there is a leak the agent can exploit.
+# Task Objective
+The main objective is to do a deep analysis of the task and then reason hard about whether it is a good task to use during RL. Understand how the task works, what the model is expected to solve, what information the model has access to while solving, what the golden solution looks like, how the tests work, and how the different models attempted the task and where they failed. Once you understand the basics, answer the following five questions, in order:
+1. **Is the task high quality and well-defined?** Does the task specification (e.g. `instruction.md`) together with the provided environment contain enough information for a competent developer to actually solve the problem? Look for ambiguity or underspecification (a critical name, format, value, or behavior the grading depends on that is neither stated nor recoverable from the codebase/environment), internal contradictions, requirements that are impossible or out of scope for the environment, and reliance on hidden/privileged knowledge. A well-defined task is one a veteran of this codebase could solve from the spec alone, recovering any omitted detail by researching the environment rather than by guessing. It is fine to leave out details an expert would already know — for a well-known algorithm, naming it is enough; for an obscure or non-public one, the details belong in the spec or the environment files. Avoid tasks with multiple valid interpretations, or that omit information critical to solving the problem (e.g. a vague "clean the provided RL data"). As a rule of thumb, every requirement the task states should be something a solution can later be graded against. Make this call from the agent'"'"'s information set (the instruction plus its environment), not from your privileged view of the golden solution and tests.
+2. **Is the grading correct and does it discriminate reliably?** By reading the grading/test code, the golden solution, and the recorded rollout verdicts, reason about whether the grading cleanly separates possible correct solutions from possible incorrect ones.
+  * **False negatives** — would a reasonable *alternative* correct solution (a different but valid approach, or a more optimal one) be wrongly rejected because the grading over-pins the golden solution'"'"'s specific implementation details?
+  * **False positives / coverage gaps** — does the grading actually check *every* requirement stated in the specification? Could an incorrect, partial, or hacky solution pass because some requirement is untested, the assertions are too loose, or the tests are gameable / reward-hackable?
+3. **Assess the rollouts.** For each model rollout attempt, read the solution, the resulting state, the recorded verdict, and the trajectory. Decide whether the recorded verdict is legitimate (a real pass / real failure) or an artifact of grading/infra problems, and classify the attempt into exactly one result category.
+4. **Assess overall task quality and difficulty.** Combine the findings above into a single GOOD/BAD task-quality verdict and a difficulty rating that distinguishes genuine difficulty from artificial difficulty. See the taxonomies in the Output Format section.
+5. **Provide actionable feedback for the author.** Give concrete, specific guidance the task author can use to fix or improve the specification, the golden solution, or the grading.
+# Task Workflow
+## Stage 1: Familiarize yourself with the working environment
+Start by exploring the directory structure:
+```bash
+find /app/taskfiles/ -type f | head -100
+ls -la /app/taskfiles/definition/
+ls -la /app/taskfiles/trials/
+```
+Locate the instruction (e.g. `instruction.md`), the golden solution, and the tests/grading harness. Locate the folder containing the model attempts and enumerate the models and attempts present. Browse the relevant source files to build context on the codebase/environment. As you do this, work out which files the agent itself can read and edit at training time versus which are review-only — you will use this for the solvability and leakage judgments.
+## Stage 2: Understand the task in depth, and study the golden solution, and grading
+1. Read the task specification carefully. Note exactly what is required and what is left implicit.
+2. Read the golden solution and understand the approach it takes.
+3. Read the tests / grading harness and understand precisely what behaviors are checked and how a pass/fail verdict is produced.
+## Stage 3: Analyze the Grading
+Reason about whether the grading is sound by **reading** the golden solution, the tests/grading code, and the evidence already captured in the rollouts (recorded verdicts, per-test results, logs). Work out what the tests actually check, whether they would pass the golden solution and fail an unsolved baseline, and whether they cover every requirement stated in the task.
+Watch for these common pitfalls:
+- **Grading that rots over time.** Tests that hard-code values which change — e.g. a currency converter whose tests pin today'"'"'s exchange rates — become wrong tomorrow.
+- **Weak grading.** Tests that check only a subset of the requirements stated in the task, so an incomplete or partial solution can still pass.
+- **Noisy grading.** Checks with no tolerance for hardware or numerical noise — e.g. a hard "must run within 10 seconds" limit with no slack, or an exact floating-point comparison.
+Use commands to help your analysis:
+```bash
+# Count test cases
+grep -c "def test_\|it " /app/taskfiles/definition/tests/*.py 2>/dev/null
+# Check what the verifier does
+cat /app/taskfiles/definition/tests/test.sh
+# Look for hardcoded values
+grep -n "assert.*==" /app/taskfiles/definition/tests/*.py 2>/dev/null
+```
+## Stage 4: Analyze Each Rollout Attempt
+For **every** model attempt:
+1. Read the recorded verdict, the attempted solution, the resulting state, and the trajectory/logs.
+2. **Decide whether the recorded verdict is legitimate.** Independently judge — by reading the attempted solution, the resulting state, and the recorded per-test results — whether the solution actually solves the task. Do not blindly trust the grader'"'"'s verdict; reason about whether it is correct given what the solution does.
+  - A recorded FAIL on an actually-correct solution indicates a grading problem (false negative).
+  - A recorded PASS on a solution that does not truly solve the task indicates the grading is gameable (false positive / reward hacking).
+3. **Diagnose the cause** from the trajectory: did the model give up or run out of budget? make a logical error? lack required knowledge? Did grading time out or crash? Did the solving environment fail?
+4. **Classify the attempt** into exactly one category from the per-attempt taxonomy below, with a one-to-three sentence justification grounded in what you read.
+Use commands to efficiently scan trial results:
+```bash
+# Quick overview of all trial results
+for d in /app/taskfiles/trials/*/; do
+ stage=$(basename "$d")
+ echo "=== $stage ==="
+ for t in "$d"*/; do
+   trial=$(basename "$t")
+   reward=$(cat "$t/result.json" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('"'"'verifier_result'"'"',{}).get('"'"'rewards'"'"',{}).get('"'"'reward'"'"','"'"'?'"'"'))" 2>/dev/null || echo "?")
+   echo "  $trial: reward=$reward"
+ done
+done
+# Search for reward hacking across all trajectories
+grep -rl "solve.sh\|solution\|reward" /app/taskfiles/trials/*/trajectory.json 2>/dev/null
+```
+Use the distribution of legitimate outcomes and the *content* of the trajectories to inform the task'"'"'s difficulty and quality.
+## Stage 5: Rubric Evaluation
+Synthesize your analysis from Stages 1–4 by evaluating each rubric defined in `/app/taskfiles/rubrics.jsonl`. Read this file to load the evaluation criteria:
+```bash
+cat /app/taskfiles/rubrics.jsonl
+```
+Each rubric has fields: `id`, `category`, `focus`, `rubric` (description), `verdict` (PASS or FAIL — to be filled by you), `required` (boolean), `fail_verdict`.
+For each rubric, assign a **PASS** or **FAIL** verdict with 1-2 sentences of evidence. Required rubrics (where `required=true`) determine the task verdict mechanically. Optional rubrics (where `required=false`) are reported for informational purposes but do NOT affect the verdict.
+Additionally, check trajectory legitimacy (from your Stage 4 analysis):
+- **PASS Verdicts Are Genuine**: If PASS verdicts were achieved through reward hacking or exploiting leaked answers → feeds into R05/R07 failure, or BAD_LEAKAGE verdict.
+- **FAIL Verdicts Are Legitimate**: If FAIL verdicts were caused by infra issues rather than model failures → BAD_INFRA verdict.
+- **Grading Harness Is Reliable**: If grading has systemic errors across attempts → BAD_INFRA verdict.
+### Verdict Derivation (MECHANICAL — do not override)
+Derive the task verdict from required rubric results (R01–R13) and trajectory analysis:
+- If ALL required rubrics PASS and trajectory analysis reveals no issues → **GOOD**
+- If R01, R02, or R03 FAIL → **BAD_AMBIGUOUS**
+- If R04 FAIL → **BAD_LOW_VALUE**
+- If R06, R07, R09, or R10 FAIL → **BAD_GRADING_WEAK**
+- If R08 FAIL → **BAD_GRADING_WRONG**
+- If R11 FAIL → **BAD_HARD_TO_VERIFY** or **BAD_SLOW_GRADING** (depending on which aspect fails)
+- If R12 or R13 FAIL → **BAD_GOLDEN**
+- If R05 FAIL → **BAD_LEAKAGE**
+- If trajectory analysis (Stage 4) reveals that PASS verdicts were achieved through reward hacking or exploiting leaked answers → **BAD_LEAKAGE**
+- If trajectory analysis reveals systematic infra failures making the task unreliably gradeable → **BAD_INFRA**
+- If multiple dimensions fail → Primary = most severe; others as secondary_issues
+Severity ordering: LEAKAGE > HARD_TO_VERIFY > GRADING_WRONG > GRADING_WEAK > SLOW_GRADING > AMBIGUOUS > LOW_VALUE > GOLDEN > INFRA.
+### Judging Difficulty
+Difficulty is a **separate axis from quality**. Read the trajectories to decide whether the task is *genuinely* hard (real reasoning / knowledge / implementation challenge) or only *artificially* hard (failures driven by ambiguity, obscure or guessable requirements, environment friction, or grading quirks rather than real intellectual difficulty). A task can be both GOOD and EASY, or BAD and GENUINELY_HARD — keep the two judgments independent.
+# Stage 6: Submission
+In your last turn, output a single summary message using the XML format below. Choose exactly one value for each enumerated field.
+## Per-attempt result taxonomy
+Classify each attempt into **exactly one**:
+- `PASSED` — genuinely solved the task and passed grading legitimately.
+- `HACKED` — recorded as a PASS, but did not genuinely solve the task: it exploited a leak, edited/weakened the tests, hardcoded the expected outputs, or otherwise gamed the grading. Drives a `BAD_GRADING_WEAK` or `BAD_LEAKAGE` task verdict.
+- `FAIL_INCOMPLETE` — never produced a complete solution: gave up, ran out of turns/output budget, or timed out / hit an environment error during *solving* before finishing.
+- `FAIL_REASONING` — produced a complete attempt but got it wrong through a logic / planning / implementation error (had the necessary knowledge, reasoned wrong).
+- `FAIL_KNOWLEDGE` — failed due to missing domain / codebase / API / library knowledge.
+- `GRADING_TIMEOUT` — the grading / test execution timed out.
+- `GRADING_FAILURE` — grading errored, crashed, was flaky, or marked an actually-correct solution as failed (a grading-side problem at scoring time, not a model failure).
+- `OTHER` — nothing above fits (requires explanation).
+## Task quality taxonomy
+Pick the single **primary** verdict; list any additional applicable `BAD_*` tags as secondary issues:
+- `GOOD` — well-specified task with correct, appropriately-strict, robust grading; observed failures are legitimate. Safe to use.
+- `BAD_AMBIGUOUS` — ambiguous / underspecified spec; reasonable solutions fail for reasons unrelated to competence.
+- `BAD_GRADING_WEAK` — grading too lenient: incorrect or hacky solutions can pass (false positives / reward-hackable).
+- `BAD_GRADING_WRONG` — grading buggy or incorrect: correct solutions fail (false negatives), or tests assert wrong behavior.
+- `BAD_GOLDEN` — the reference/golden solution itself is wrong or incomplete: it does not actually solve the task, or does not pass the grading.
+- `BAD_INFRA` — broken environment (setup / container / test-harness errors) so the task cannot be reliably solved or graded.
+- `BAD_LEAKAGE` — the agent'"'"'s environment exposes the answer or lets it shortcut the task (golden solution, expected outputs, editable tests, answers in git history / comments) so it can pass without genuinely solving.
+- `BAD_HARD_TO_VERIFY` — the task lacks a meaningful solver-verifier gap: verifying solutions is as hard as producing them, making the task fundamentally unsuitable for RL.
+- `BAD_SLOW_GRADING` — the grading/verification takes too long or requires disproportionate computational resources, making the task impractical for RL training loops.
+- `BAD_LOW_VALUE` — the task does not produce useful RL training signal: either a step-by-step recipe requiring no reasoning, too trivially easy (all models pass, no gradient), or too impossibly hard (no model passes, no positive reward).
+- `BAD_OTHER` — other quality problem (requires explanation).
+## Task difficulty taxonomy
+Pick **exactly one**:
+- `EASY` — most or all legitimate attempts pass; low difficulty.
+- `GENUINELY_HARD` — failures stem from a real reasoning / knowledge / implementation challenge.
+- `ARTIFICIALLY_HARD` — appears hard only due to ambiguity, obscure/guessable requirements, environment friction, or grading quirks — not real intellectual difficulty.
+- `MIXED` — a combination of genuine and artificial difficulty.
+## Output Format
+**Rubric citation rule:** When referencing rubrics anywhere in the report (explanation, evidence, feedback, etc.), always cite them as `ID:focus` (e.g. "R06:Test coverage", "R07:Reward-hacking") so readers can identify what each rubric evaluates without cross-referencing rubrics.jsonl.
+```xml
+<task_quality_review>
+ <task_type>{ SWEBENCH | TERMINAL_BENCH | OTHER }</task_type>
+ <plain_summary>
+   <task>{4-5 sentences in plain language a non-expert can follow: what the task asks the model to do, and in what kind of system/codebase.}</task>
+   <complexity>{2-3 sentences in plain language: what actually makes this task hard — the crux a solver has to get right.}</complexity>
+ </plain_summary>
+ <rubric_results>
+   <!-- One entry per rubric from rubrics.jsonl. Format: -->
+    <rubric id="{id}" dimension="{category}" focus="{focus}" statement="{rubric}">
+      <verdict>PASS|FAIL</verdict>
+      <evidence>{1-2 sentences of evidence.}</evidence>
+   </rubric>
+   <!-- Repeat for all rubrics (R01-R13 required, N01-N04 optional) -->
+ </rubric_results>
+ <task_quality>
+   <verdict>{ GOOD | BAD_AMBIGUOUS | BAD_GRADING_WEAK | BAD_GRADING_WRONG | BAD_GOLDEN | BAD_INFRA | BAD_LEAKAGE | BAD_HARD_TO_VERIFY | BAD_SLOW_GRADING | BAD_LOW_VALUE | BAD_OTHER }</verdict>
+   <failed_rubrics>{Comma-separated list of failed required rubric IDs (R01–R13 only), or NONE}</failed_rubrics>
+   <secondary_issues>{Other BAD_* tags from other failed dimensions, or NONE}</secondary_issues>
+   <explanation>{State which required rubric(s) FAILED → verdict derivation, or trajectory analysis finding → verdict. If all PASS: "All 13 required rubrics PASS and trajectory analysis clean → GOOD."}</explanation>
+ </task_quality>
+ <task_difficulty>
+   <rating>{ EASY | GENUINELY_HARD | ARTIFICIALLY_HARD | MIXED }</rating>
+   <explanation>{Why — grounded in the trajectories and the legitimate pass/fail distribution.}</explanation>
+ </task_difficulty>
+ <grading_assessment>
+   {Your reasoning about whether the grading is sound: would it pass the golden solution and fail the unsolved baseline? Note any problems inferred from reading the grading code and the rollout evidence — non-discriminating tests, coverage gaps, over-pinned assertions, flakiness, timeouts, etc.}
+ </grading_assessment>
+ <attempt_results>
+   <attempt>
+     <model>{the REAL model for this attempt from trials/manifest.json keyed by the attempt'"'"'s stage folder (or the trial'"'"'s trajectory.json agent.model_name if the manifest is missing), e.g. gpt-5.5 / claude-opus-4-6 / meta/avocado_dvsc_tester; use the stage folder name (agent/codex/metacode) only as a last resort if neither source exists}</model>
+     <attempt_id>{e.g. attempt_0}</attempt_id>
+     <recorded_verdict>{ PASS | FAIL | UNKNOWN }</recorded_verdict>
+     <result>{ one value from the per-attempt result taxonomy }</result>
+     <explanation>{1-3 sentences grounded in the solution, state, verdict, and trajectory. If you judged the recorded verdict illegitimate, say why.}</explanation>
+   </attempt>
+   <!-- one <attempt> block per attempt across all models -->
+ </attempt_results>
+ <feedback_for_task_author>
+   {Concrete, actionable guidance for the person who created this task: what to fix in the spec, the golden solution, or the grading, and how. Be specific — cite files, tests, and behaviors. If the task is GOOD, say what makes it strong and note any optional improvements.}
+ </feedback_for_task_author>
+</task_quality_review>
+```
+## Remember:
+- Do a deep analysis first — the task, its environment, the instruction given to the model, how the different models attempted it, the golden solution, and the tests — and only summarize your results in the format above once you are confident.
+- You cannot ask questions. Work autonomously and produce the final output.
+- You have full shell access. Use `grep`, `find`, `cat`, `jq`, `python3`, and any other commands to efficiently explore large files and directories rather than reading everything sequentially.
+- **Write your final review XML to `/logs/artifacts/review.xml`** and copy it to `/logs/verifier/review.xml` so the verifier can confirm it exists. Do this in addition to outputting the XML in your conversation:
+ ```bash
+ mkdir -p /logs/artifacts /logs/verifier
+ cat > /logs/artifacts/review.xml << '"'"'REVIEW_EOF'"'"'
+ <task_quality_review>
+ ...your review...
+ </task_quality_review>
+ REVIEW_EOF
+ cp /logs/artifacts/review.xml /logs/verifier/review.xml
+ ```
+- **Also write the `<rubric_results>` block on its own to `/logs/artifacts/rubric_results.xml`.** Use the exact same `<rubric_results>...</rubric_results>` element you already put inside `<task_quality_review>` in review.xml, as a standalone file (in addition to review.xml, not instead of it):
+ ```bash
+ cat > /logs/artifacts/rubric_results.xml << '"'"'RUBRIC_EOF'"'"'
+ <rubric_results>
+ ...the same rubric_results block you put in review.xml...
+ </rubric_results>
+ RUBRIC_EOF' > /logs/agent/prompt
+Command outputs captured
+[REDACTED sensitive log record]
+Command outputs captured
+[REDACTED sensitive log record]
+Command outputs captured
+[REDACTED sensitive log record]
+Command outputs captured
+Wrote Codex trajectory to /tmp/lh-aftr.KcQFtA/agentic-review-cli-l2_n98a_/jobs/2026-11-04__16-37-06__20c107/review-ss007-pep752-implicit-nam__8mKH2oZ/agent/trajectory.json
+Collecting main service artifacts

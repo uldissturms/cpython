@@ -8,11 +8,16 @@ Shape: single-turn task in the multi-turn form — exactly one `[[steps]]`
 alone (test.sh, run_script.sh, parser.py, config.json, Dockerfile);
 task-level `tests/` mirrors the harness with stub config values.
 
-Contract: 101 `fail_to_pass` (six `Lib/test/test_pep752_*.py` conformance
+Contract: 110 `fail_to_pass` (six `Lib/test/test_pep752_*.py` conformance
 files) + 340 `pass_to_pass` (stable dotted-id subset of test_ensurepip,
 test_venv, test_json, test_htmlparser). Reward 1 iff every required id is
-present with status PASSED. All lists generated from real in-container
-parser runs, never by hand. The 101-list was regenerated from a real
+present with status PASSED AND the independent probe passes (two data
+channels; either alone is insufficient). The 110-list is the verified
+101-list plus the nine round-7 ids from the contract's pinned
+class/method names (authored by AUTHOR_1P next; until then the golden
+tree grades 0 on exactly those nine, with 101/101 old f2p + 340/340 p2p
++ 39/39 probe checks green -- measured in-container, online and
+`--network=none`). The 101-list was regenerated from a real
 in-container solved parser run after AUTHOR_1P re-authored the suite
 (stale `test_html_byte_stable` out; `test_html_semantically_stable` +
 six new tooling/semantics ids in). test_patch already installs the
@@ -41,6 +46,28 @@ only. Evidence: `build/.probe/1_pep752/{base,output}.json`.
   (never an int return); CLI maps it to exit 3 with `409 Conflict` on
   stderr. Rejected exit 1 for conflicts: 409 is the PEP's status and
   deserves its own code.
+- `UploadConflictError.owner` is the attempted UPLOADER (the `owner`
+  argument to `authorize_upload`), never the grant holder; the golden
+  docstring already said so and the suite already asserted it, but the
+  instruction never did -- pinned as facts now, so the grant-holder
+  reading the k1 rollout chose is settled. Rejected grant-holder
+  ownership (reports the victim instead of the actor, and contradicts
+  the existing passing test).
+- `authorize_upload` validates its owner FIRST (`ValueError` on
+  empty/non-string, before any grant is consulted -- same rule and
+  message as `register_project`/`SecurityPolicy`), so CLI
+  `check-upload` with `--owner ""` exits 1 with `error` even for
+  unreserved projects (the golden printed OK/0 there). Rejected
+  validating only in the CLI (the library then accepts owners the CLI
+  rejects, and the contract pins both levels).
+- `register_project` records ownership and validates the owner; it
+  does NOT authorize uploads (a stranger-owned project under a
+  reserved prefix still registers -- asserted now). `grandfather`
+  records the project's owner AND exempts it (both keys persist).
+  Rejected register-time authorization (conflates recording with
+  gating; the golden never did it) and ownerless exemptions (the
+  `owned` flags and foreign-grandfathered policy denial need the
+  recorded owner).
 - `owned` is per-grant (`project owner == grant owner`); grandfathered
   projects report `owned: false`; removal nulls the key. The three-way
   null/owned/unowned distinction has one test each.
@@ -48,15 +75,20 @@ only. Evidence: `build/.probe/1_pep752/{base,output}.json`.
   and raise `NotSupportedError` from list/detail. Rejected returning
   `[]`/None: a missing endpoint must raise, not answer.
 - HTML Simple API: `simple_html(project, files)` compared STRUCTURALLY
-  (doctype, html/head/body/title/h1, ordered href+text anchors, no
-  `namespace` keys, deterministic re-render). Whitespace, indentation,
-  attribute order and `<br>` vs `<br/>` are all free: the pre-push trial's
-  valid unindented `<br>` page failed the old byte pin, and the
-  instruction only ever required unchanged escaped HTML without
-  namespace metadata. Rejected keeping the byte pin (rejects correct
-  renderers) and pinning a template in the instruction (over-fits one
-  spelling). The page stays a NEW function (CPython has no Simple
-  renderer to extend); "untouched" = absence + determinism.
+  (doctype, html/head/body, title+h1 that each NAME the project,
+  ordered href+text anchors, no `namespace` keys, deterministic
+  re-render). Whitespace, indentation, attribute order, `<br>` vs
+  `<br/>`, list-vs-flat layout, and the title/heading WORDING are all
+  free: the beta reviewer's valid renderer (ordered links, project
+  title, no metadata) failed the old `Links for demo` pin, and no
+  pre-existing renderer fixes that wording. The instruction now states
+  the structure (full document, project-naming title/heading, ordered
+  anchors) without fixing the words. Rejected keeping the wording pin
+  (rejects correct renderers) and pinning a template in the
+  instruction (over-fits one spelling). The page stays a NEW function
+  (CPython has no Simple renderer to extend); "untouched" = absence +
+  determinism. Pinned by the permanent `alternate_html` pos control
+  (0 on the wording-pinned suite, 1 after the revise).
 - Docs PEP mention accepts the literal `PEP 752` OR the `:pep:` role
   with 752: the trial's `:pep:` page is standard CPython practice (the
   golden page itself uses the role in body text). Rejected literal-only
@@ -68,6 +100,11 @@ only. Evidence: `build/.probe/1_pep752/{base,output}.json`.
   (both directions probed; failed transfer leaves owners unchanged;
   same-owner/disjoint transfers still succeed). Rejected silent
   re-ownership (creates overlapping owners, the invariant violation).
+- Sparse chains pin the direct-only rule: with only `foo` and
+  `foo-bar-baz` granted, `parent` is None and `children("foo")` is []
+  (a missing middle grant breaks both links; nearest-granted-ancestor
+  would answer `foo`/`[foo-bar-baz]` instead). The golden implements
+  immediate direct links; the suite now asserts the gap case.
 - CLI `_load_index` wraps per-entry `ValueError`/`TypeError` (non-string
   owners, bad projects, non-string exemptions) into `GrantError`, so
   `main` returns 1 with `error` on stderr instead of raising. `GrantError`
@@ -79,17 +116,50 @@ only. Evidence: `build/.probe/1_pep752/{base,output}.json`.
   the word `error`. The weak-substring checks let a reworded tree score
   1 (demonstrated bypass, now a neg control). Rejected keeping
   substrings (the measured hole).
+- The persisted store schema is pinned in BOTH directions: after
+  reserve/register/grandfather the file holds exactly the documented
+  `grants`/`projects`/`grandfathered` document (no envelope, no extra
+  keys), and a hand-written documented document loads back (list,
+  denied and grandfathered-allowed check-uploads). The beta reviewer's
+  `private_payload` substitution passed the old suite; it fails the new
+  schema tests AND the probe, and ships permanently as the
+  `store_spoof` neg control (1 pre-fix, 0 post -- measured both).
+  Rejected pinning only the load side (a private writer still passes)
+  or only the write side (a private reader still passes).
+- Bare `dump` prints the VERSIONED ENVELOPE
+  (`{"api_version": "1.5", "namespaces": [{"name": ...}]}` with
+  name-only entries from `list_namespaces`); `list --json` prints the
+  name-and-owner entries; `dump --project` prints one project-detail
+  mapping. The instruction showed both shapes without assigning them,
+  and the k1 rollout guessed raw-store dump output -- each shape is a
+  fact on its operation now. The existing dump test is unchanged
+  (it already required the envelope); the spec caught up to it.
 - Fixture schemas are instruction facts now (`grants` list of
   name+owner mappings with >=2 entries, `projects` mapping,
   `grandfathered` list, second index with empty `grants` list); the gen
   test asserts each shape. Rejected leaving the schema unspecified
   (the trial's self-consistent alternative encoding then fails
   requirements the instruction never stated).
-- `verify_offline.sh` is graded NEGATIVELY too: missing fixtures and two
-  damaged shapes must exit nonzero WITHOUT the success marker (a stub
-  printing only the marker fails both). The existence pre-assert keeps
-  both fail_to_pass (a missing script fails, it does not pass by
-  nonzero). Rejected marker-only grading (the demonstrated stub).
+- `verify_offline.sh` is graded NEGATIVELY too: missing fixtures and
+  THREE damaged shapes (invalid `grants.json`, empty `projects.json`,
+  string-`grants` `second-index.json`) must exit nonzero WITHOUT the
+  success marker (a stub printing only the marker fails all). The
+  golden verifier now validates every fixture's shape up front
+  (it never touched `second["grants"]`, so the string sailed through
+  with exit 0). The existence pre-assert keeps both fail_to_pass (a
+  missing script fails, it does not pass by nonzero). Rejected
+  marker-only grading (the demonstrated stub).
+- Docs pin the `distribution.rst` backlink (the suite checked the new
+  page but never its toctree entry), and the shell scripts pin
+  network-freedom by scanning for network command/library words
+  (`curl`, `wget`, `ssh`, ..., `urllib`, `httpx`). Bare `requests`
+  and `socket` words are deliberately NOT matched: the reference
+  fixtures register a project literally named `requests`, which false
+  positived the first draft of the probe (measured). Fixture URL
+  strings stay allowed. Rejected substring matching without word
+  boundaries (same false-positive class) and running the scripts
+  under a blocked network (no enforcement primitive inside the
+  suite; the static scan plus offline trial runs is the evidence).
 - Build integration is graded: `Makefile.pre.in` LIBSUBDIRS names the
   package (else `make install` omits it) and
   `Python/stdlib_module_names.h` lists it (else `sys.stdlib_module_names`
@@ -165,6 +235,23 @@ only. Evidence: `build/.probe/1_pep752/{base,output}.json`.
   binary's prefix (`import test` -> `/app/Lib/test`, verified).
   Rejected `-S`-only (leaves cwd shadowing) and keeping cwd=/app
   (leaves `/app/test.py` shadowing `-m test`, proven live).
+- Reward needs TWO data channels: the JUnit verdicts AND the
+  independent probe (`tests/probe.py`, 39 checks over every graded
+  surface, negatives included, specified behavior only). The probe
+  runs in a FRESH locked-down interpreter post-suite (absolute
+  repo-interpreter path, `-I -S`, cwd `/`, scrubbed env, script from
+  verifier-owned `/tests`) and never reads the report -- so the
+  in-process JUnit rewrite (an atexit hook suffices; replicated as
+  the `junit_forge` neg control: 441/441 forged PASSED) scores 1 on a
+  report-only grader and 0 once the probe joins (35 probe checks
+  fail; measured both). Missing/unparseable probe payload fails
+  closed. Rejected report-path obscurity (in-process code reads
+  env/argv -- buys nothing), running the probe under system python
+  (agent code may use newer syntax than 3.12 parses), and trusting
+  the report alone (the measured hole). The residual that stays out
+  of model is a replaced `./python` binary faking BOTH channels --
+  inherent to artifact-carries-binary, same as before, now the ONLY
+  forgery route instead of one of two.
 - Image delinks every symlink under /app into a copy at build time
   (79 -> 0, asserted fail-closed in the RUN). Separate-verifier
   staging refuses link-bearing trees; copies stage. Rejected
@@ -240,12 +327,20 @@ negative probes, and `verify_spoof` proves the demonstrated bypass
 tests fail). (8) Build-input gaming (skipping Makefile.pre.in / the
 stdlib-names header while shipping the Lib tree) — closed by the
 registration + DESTDIR-install + runtime-membership tests: a tree
-that installs without the package fails three required ids. Out of threat model (inherent to
-SWE-bench, would read as TOO_EASY in calibration): agent code
-monkeypatching unittest mid-run (same power would also rewrite the
-JUnit file via atexit -- one accepted residual, not two); replacing
-the `./python` binary (the artifact carries it). The separate verifier
-closes the cross-turn vectors (no /tests or /tmp/grade in the agent
+that installs without the package fails three required ids.
+(9) In-process JUnit rewrite (atexit hook, unittest monkeypatch,
+patched regrtest) — CLOSEd this round: the reward needs the
+independent probe too, which runs in a fresh locked-down interpreter
+and never reads the report; `junit_forge` proves the replicated
+attack (441/441 forged PASSED, 1 pre-fix) now scores 0 (35 probe
+checks fail). (10) Private-envelope persistence — CLOSEd this round:
+the store schema is pinned in both directions by new tests and the
+probe; `store_spoof` proves the demonstrated bypass (1 pre-fix) now
+scores 0 (probe `cli.schema` fails). Out of threat model (inherent to
+SWE-bench, would read as TOO_EASY in calibration): replacing the
+`./python` binary (the artifact carries it) to fake BOTH channels --
+the only remaining forgery route. The separate verifier closes the
+cross-turn vectors (no /tests or /tmp/grade in the agent
 container).
 
 Declined on merits (do not re-litigate): one-directional overlap;
@@ -257,10 +352,12 @@ fidelity + REPO.md baseline win); `allow_internet = false`
 (maps to NO_NETWORK, kills trials); multi-turn shape (the concept is
 one milestone; phases are guidance).
 
-Open unknowns: none blocking. Post-AUTHOR_1P list regeneration is
-done (this round); controls re-run (`verify_spoof` must flip 1→0) and
-coverage (≥80%) ride the next full gate pass.
-R09 already closed end-to-end this round: local oracle 1/1 reward 1.00
+Open unknowns: none blocking. AUTHOR_1P revise is ARMED (instruction
++ 4 test files flagged; 9 new ids pre-listed in config, so the golden
+tree grades 0 on exactly those until the revise lands); the oracle,
+controls re-run (pos controls must flip 0→1, `alternate_html` with
+them) and coverage (≥80%) ride the next full gate pass.
+R09 already closed end-to-end in round 3: local oracle 1/1 reward 1.00
 in 4:06 with complete /app capture (job 2026-11-04__13-34-25__3b50e5).
 Calibration will judge difficulty and horizon.
 
@@ -376,3 +473,116 @@ Calibration will judge difficulty and horizon.
   87db6dd5e9d865e1d0298f7e938b1277be9d02a0c6578aa46b86fe33b84b1c3d.
   Scratch (round-5 snapshot, probe + proof logs) under
   /home/uldis/cpython/.scratch/ss007-r6/.
+- Round 7 (REVISION, pre-push beta REVISE with 6 findings): closed all
+  six. R01/R02: facts +20 lines pinning the four ambiguities --
+  conflict-owner is the attempted uploader (suite already asserted
+  it; the k1 rollout's grant-holder guess is settled), bare dump is
+  the versioned envelope / list --json the name-owner entries / dump
+  --project one detail, register records without authorizing,
+  grandfather records + exempts -- and the instruction revise is
+  flagged. Existing stranger-owner and dump tests UNCHANGED (the spec
+  caught up to them). R02/R08: HTML title/h1 wording freed -- the
+  test now requires each to NAME the project instead of the exact
+  `Links for demo` (the reviewer's valid renderer passes the new
+  wording; replicated in-container); instruction states the structure
+  without fixing the words; permanent `alternate_html` pos control
+  (0 on the pinned suite, 1 after the revise). R06: nine new tests
+  across four files (persisted-schema both directions, sparse
+  parent/children gaps, distribution backlink, network-free scripts,
+  empty-owner uploads both levels, register-without-authorization)
+  plus the second-index damaged case and the HTML revise; f2p
+  101->110 with the pinned ids pre-listed. R07: reward needs the new
+  independent probe (39 checks, fresh locked-down interpreter, never
+  reads the report) AND every required id; `junit_forge` (441/441
+  forged PASSED) and `store_spoof` (private envelope) both measured
+  1 on the pre-fix harness, 0 with the probe. R12: golden
+  `authorize_upload` validates owners first (empty check-upload now
+  exits 1, was 0/OK) and `verify_offline.sh` validates every fixture
+  shape up front (string-grants second index now exits 1, was
+  0/marker); patch regenerated (2 files) and spliced byte-identical
+  into solve.sh + config. Validated in containers of the task image:
+  golden 101/101 old f2p + 340/340 p2p + 39/39 probe green online
+  AND --network=none (reward 0 on exactly the 9 AUTHOR_1P-pending
+  ids); pos alternate_core 1 with the probe; full run_controls
+  green-modulo-pending (all negs 0, twice identical, pos 0 only on
+  the 9 missing ids). Preserved green: every previously-green
+  behavior still green; `local:sanity` untouched (parser/runner
+  bytes identical, harness mirrors in sync). Scratch under
+  /home/uldis/cpython/.scratch/ss007-r7/, removed after the run.
+
+## R8 surgical: strip revise keys from kind=tests jobs
+AUTHOR_1P parked authoring_blocked: "revise": true is valid only on
+kind="instruction" jobs. Removed "revise" and "revise_reason" from
+all four kind="tests" jobs that carried them (semantics, uploads,
+metadata, tooling); naming and policy already clean. Kept "revise":
+true on the kind="instruction" job. No contract edits, no redraw
+flags added (no target needs blank-slate treatment). Verified valid
+JSON, 7 jobs intact, zero kind="tests" jobs carry revise/redraw keys.
+
+## R9 surgical: redraw (not revise) for the kind=instruction job
+AUTHOR_1P's revise pass on steps/1_pep752/instruction.md returned "needs
+no change", but the kept page (91 lines, byte-identical) omits the
+round-7 facts (INSTRUCTION_FACTS.md 254 -> 300 lines): no
+conflict-owner-as-uploader disambiguation (facts l99; "uploader" /
+"attempted" absent from the page), no register-records-without-
+authorizing (facts l142; absent), no bare-dump envelope vs list
+--json entries distinction (facts l225; the page's one "envelopes"
+mention covers list_namespaces routes, not the dump shape), and the
+re-authored tests assert these behaviors, so the page trails the
+grader. Adjudicated redraw over a second revise: the author never
+sees revise_reason and the identical revise prompt just no-changed,
+so another revise risks a second no-change round, while one
+blank-slate pass from the current 300-line facts guarantees the new
+disambiguations get woven and the 91-line page is cheap to rewrite.
+Set ONLY "redraw": true + redraw_reason on the kind="instruction"
+job (revise keys removed from it); all six kind="tests" jobs
+untouched, still carrying neither revise nor redraw keys. Verified
+valid JSON, 7 jobs intact.
+
+## R10 surgical: anchor all 20 round-7 facts additions, re-arm redraw
+
+The R9 redraw landed a 23-line page that still omits the R01
+disambiguations (driver-verified by grep: no uploader/conflict-owner
+language, no register/grandfather record-vs-authorize semantics, no
+dump-envelope vs list-entries distinction). Root cause confirmed: the
+round-7 facts additions (+20 lines, uncommitted vs HEAD) were never
+added to INSTRUCTION_PUBLIC_ANCHORS.json, so the anchor gate passes
+while the author drops them. Fix anchors all 20, in facts order
+(189 -> 209), each verified a verbatim substring of the facts file:
+
+Required 6 (R01 disambiguations): conflict-owner-as-uploader x2 ->
+test_stranger_upload_conflicts (uploads; asserts owner == "mallory");
+register-without-authorizing -> test_register_project_records_without_
+authorization (metadata); grandfather-records-plus-exempts ->
+test_cli_persists_documented_store_schema (both keys persist) +
+test_cli_loads_documented_store_schema (exemption effective); bare
+dump envelope + name-only entries x2 -> test_cli_dump.
+
+OTHER 14 (same defect class, each test-pinned): stranger-owned
+still registers -> test_register_project_records_without_
+authorization; list --json entries -> test_cli_reserve_and_list;
+dump --project detail -> test_cli_dump_project; sparse-chain gap ->
+test_children_sparse_chain_skips_gap + test_parent_sparse_chain_is_
+none; HTML doctype/title+heading/ordered-anchors x3 ->
+test_html_semantically_stable; persist-exactly-schema ->
+test_cli_persists_documented_store_schema; hand-written loads back
+-> test_cli_loads_documented_store_schema; empty/non-string owner
+ValueError + validate-before-grants x2 ->
+test_authorize_upload_rejects_empty_owner (unreserved "requests"
+case proves ordering); CLI empty-owner-unreserved -> test_cli_check_
+upload_rejects_empty_owner; verify-validates-shapes + malformed
+second index x2 -> test_verify_offline_rejects_damaged_fixtures
+(second-index.json string-grants subTest).
+
+Scan disposition for the remaining pre-round-7 unanchored lines:
+excluded deliberately, not overlooked. They were covered without
+anchors in the reviewed 91-line page (the beta R01 finding named
+only the four ambiguities), and each is either substance-covered by
+a sibling anchor (L38 by the hyphen-suffix anchor; L98 by the dotted
+conflict attrs; L101 by True/False; L144/L160/L163 by the JSON shape
+literals; L166-L168/L285 by instruction prose; L290 by the :pep:
+anchor) or a bare symbol the rounds declined as weak (main/list/
+dump/status_code). Re-armed the kind="instruction" redraw with a
+CHANGED redraw_reason (prior request consumed); no revise keys
+anywhere, all six tests jobs untouched. Verified valid JSON both
+files, +20 anchors, zero duplicates.

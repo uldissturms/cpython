@@ -1,91 +1,37 @@
-Add a standard library package named `packagenamespaces` that implements PEP 752.
+Provide a standard library implementation of reserved package namespaces for a package index under `PEP 752` with import name `packagenamespaces`.
 
-Place the implementation at `Lib/packagenamespaces/` with importable modules `packagenamespaces.normalize`, `packagenamespaces.matching`, `packagenamespaces.grants`, `packagenamespaces.uploads`, `packagenamespaces.metadata`, `packagenamespaces.policy`, and `packagenamespaces.cli`.
-Run the command line through `python -m packagenamespaces`.
+The package lives at `Lib/packagenamespaces/` and exposes `packagenamespaces.normalize` with `packagenamespaces.matching` with `packagenamespaces.grants` with `packagenamespaces.uploads` with `packagenamespaces.metadata` with `packagenamespaces.policy` with `packagenamespaces.cli` and runs through `python -m packagenamespaces`.
 
-Drive the tool from `main(argv)`, which takes an argument vector and returns a status code.
-Persist state in a selectable file addressed by `--store` with JSON output selected by `--json`, ownership supplied by `--owner`, and single-project output selected by `--project`.
-Document every command through `--help`.
-Support `reserve <namespace> --owner <owner>` for grants, `remove <namespace>` for withdrawal, `register <project> --owner <owner>` and `grandfather <project> --owner <owner>` for projects, `check-upload <project> --owner <owner>` for upload decisions, `list --json` and `dump --project <project>` for inspection, and `show <namespace>` with its `show <namespace> --json` variant.
-The stored document looks like `{"grants": {"<namespace>": "<owner>"}, "projects": {"<project>": "<owner>"}, "grandfathered": ["<project>"]}` while list output looks like `[{"name": "<namespace>", "owner": "<owner>"}]`.
-Reservation prints `reserved <namespace> for <owner>`, removal prints `removed <namespace>`, registration prints `registered <project> for <owner>`, grandfathering prints `grandfathered <project>`, and a permitted check prints `OK <project>`.
-Human-readable lists print `<namespace> <owner>` per grant in sorted order.
-Human-readable detail prints `name: <name>`, `owner: <owner>`, `parent: <parent>`, and `children: <children>`, using `parent: none` and `children: none` when no grant relationship applies.
-Lookup failure means show unknown exits 1 with a message containing `unknown grant`.
-An overlapping reservation means reserve overlap exits 1 with a message containing `overlaps the grant`.
-A permitted upload means check-upload allowed exits 0 while a denied upload means check-upload denied exits 3 with 409 Conflict.
-`CONFLICT_EXIT = 3` so scripts observe exit status 3.
-A damaged store means corrupt store exits 1 and a missing owner means empty owner exits 1.
-Failures follow `corrupt store message contains error` and `empty owner message contains error`.
-Validation means non-string owners or entries in a store exit 1.
+Documentation adds `Doc/library/packagenamespaces.rst` alongside `Doc/library/distribution.rst` alongside `Doc/whatsnew/3.16.rst` alongside `Misc/NEWS.d/next/Library/` where `library page names PEP 752 in prose or through the :pep: role`.
 
-Normalize every name through `normalize_name`, validate through `is_valid_namespace`, and measure nesting through `hyphen_depth`.
-Runs of `-`, `_`, and `.` fold to one `-` with lowercase output so that `Foo.bar_BAZ becomes foo-bar-baz`.
-Names stay valid only with an ASCII letter or digit at both ends.
-Empty names, edge separators, spaces, and punctuation stay invalid.
-Control handling means names holding newlines, tabs or other control characters are invalid.
-Non-string input makes `normalize_name` raise `TypeError` and makes `is_valid_namespace` return `False`.
-Depth counts hyphens after normalization.
+Build integration keeps `Makefile.pre.in LIBSUBDIRS lists packagenamespaces` with `Python/stdlib_module_names.h lists packagenamespaces` with `normal make install ships the new package` with `sys.stdlib_module_names contains packagenamespaces`.
 
-Decide project membership with `namespace_matches`, which succeeds on an exact match or starts with the namespace followed by a hyphen.
-`foo matches foo-bar, not foobar`.
-Matching uses both inputs normalized before comparison.
+Naming helpers expose `normalize_name` with `is_valid_namespace` with `hyphen_depth` where `Foo.bar_BAZ becomes foo-bar-baz` illustrates conversion and failures use `TypeError` with `ValueError` and `names holding newlines, tabs or other control characters are invalid`.
 
-Model ownership with `Grant` records held in a `GrantStore`, where `Grant.name` carries the normalized namespace and `Grant.owner` carries the holder.
-Report failures through `GrantError` with `InvalidNamespaceError` for bad names, `OverlapError` for collisions, `DepthLimitError` for excess nesting, and `UnknownGrantError` for missing entries.
-Judge collisions with `grants_overlap`, where overlap appends a hyphen to both normalized names and overlap is detected in both directions.
-The nesting rule is a longer namespace under an existing grant overlaps while `foo and foobar do not overlap`.
-Nesting stays limited since overlap allowed only for the overlapping grant's own owner, meaning same owner may nest grants.
-Cap nesting with `DEFAULT_DEPTH_LIMIT = 3` exposed as `GrantStore.depth_limit`, where `depth_limit None means unlimited`.
-Mutate the store through `GrantStore.reserve`, `GrantStore.transfer`, and `GrantStore.remove`, and inspect it through `GrantStore.get`, `GrantStore.namespaces`, `GrantStore.matching`, `GrantStore.parent`, and `GrantStore.children`.
-Lookups report `get returns None when ungranted` and `parent returns None without a grant`.
-`len of a store counts its active grants`.
-`a namespace string is in a store when its normalized form holds a grant`.
-`parent returns the granted parent name as a string`.
-`children returns the granted child names as a sorted list of strings`.
-Reservation stores the normalized form, rejects invalid names and empty owners, enforces the depth cap, and refuses exact duplicates held by another owner.
-Transfer and removal of unknown namespaces raise `UnknownGrantError`, listings return sorted names and grants, and parent and child links track only direct granted relationships.
-`transfer that would overlap another owner's grant raises OverlapError`.
+Matching exposes `namespace_matches` where `foo matches foo-bar, not foobar` holds because a match is exact or `starts with the namespace followed by a hyphen` with `both inputs normalized before comparison`.
 
-Gate uploads with `authorize_upload`, which returns `True` when allowed and raises `UploadConflictError` for a stranger under a reserved prefix.
-Conflicts carry `CONFLICT_STATUS = 409` with details on `UploadConflictError.status_code`, `UploadConflictError.project`, `UploadConflictError.namespace`, and `UploadConflictError.owner`, rendering as 409 Conflict.
-An owner under its own grant, an unreserved project, and a grandfathered project touched by a stranger all pass.
-Track legacy exceptions in a `GrandfatheredRegistry` managed through `GrandfatheredRegistry.add`, `GrandfatheredRegistry.discard`, `GrandfatheredRegistry.covers`, and `GrandfatheredRegistry.projects`.
-`len of a registry counts its exempt projects`.
-`a project string is in a registry when its normalized form is exempt`.
-Upload checks apply normalization runs before the upload check.
+Grants center on `Grant` with `GrantStore` with `GrantError` with `InvalidNamespaceError` with `OverlapError` with `DepthLimitError` with `UnknownGrantError` with `grants_overlap` with `DEFAULT_DEPTH_LIMIT = 3` and operations include `GrantStore.reserve` with `GrantStore.transfer` with `GrantStore.remove` with `GrantStore.get` with `GrantStore.namespaces` with `GrantStore.matching` with `GrantStore.parent` with `GrantStore.children` with `GrantStore.depth_limit` alongside fields `Grant.name` with `Grant.owner`.
 
-Enforce install decisions with `SecurityPolicy`, configured through `SecurityPolicy.namespaces` and `SecurityPolicy.owner`.
-Check one project with `SecurityPolicy.allows` and bulk requirements with `SecurityPolicy.evaluate`, where bulk checks follow evaluate returns normalized-name to boolean mapping.
-Access requires project owner must equal the policy owner and matching policy namespace must hold an active grant for that owner.
-Denials cover unknown projects denied, ungranted namespaces denied, and grandfathered foreign projects denied.
-Scope follows grants are per-repository since a grant on one index confers nothing on another.
-An empty policy owner raises `ValueError` while invalid policy namespaces raise `InvalidNamespaceError`.
+Behavior follows `get returns None when ungranted` with `parent returns None without a grant` with `depth_limit None means unlimited` with `overlap appends a hyphen to both normalized names` with `overlap is detected in both directions` with `a longer namespace under an existing grant overlaps` with `foo and foobar do not overlap` with `overlap allowed only for the overlapping grant's own owner` with `same owner may nest grants`.
 
-Serve repository state through `RepositoryIndex`, reached via `RepositoryIndex.store`, `RepositoryIndex.supports_namespaces`, `RepositoryIndex.grandfathered`, and `RepositoryIndex.api_version`.
-Supporting repositories report version 1.5 where `API_VERSION is the string "1.5"` while legacy repositories report version 1.4 where `LEGACY_API_VERSION is the string "1.4"`.
-Manage projects with `RepositoryIndex.register_project`, `RepositoryIndex.project_owner`, and `RepositoryIndex.projects`, where `project_owner returns None when unknown`.
-Describe one project with `RepositoryIndex.project_detail`, returning `{"name": "<project>", "namespaces": null}` when unclaimed and `{"name": "<project>", "namespaces": [{"name": "<namespace>", "owned": true}]}` with `{"name": "<namespace>", "owned": false}` entries where ownership differs.
-Detail output keeps owned flags so `owned is true when the project owner holds the grant` and `owned is false for grandfathered projects`, with `matches sorted by name in project_detail` and `grant removal sets project_detail namespaces to null`.
-List namespaces with `RepositoryIndex.list_namespaces` over routes `/namespaces` and `/namespace/<namespace>`, returning `{"name": "<namespace>"}` entries and `{"api_version": "1.5", "namespaces": [{"name": "<namespace>"}]}` envelopes.
-Expand one entry with `RepositoryIndex.namespace_detail`, returning `{"name": "<namespace>", "parent": "<parent>", "children": ["<child>"], "owner": "<owner>"}` and using `"parent": null` without a granted parent.
-Compatibility keeps `legacy repositories omit the namespaces key` with legacy list and detail raising `NotSupportedError`.
-Render files with `RepositoryIndex.simple_html` from `{"filename": "<file>", "url": "<url>"}` entries, where HTML Simple API is unchanged, `simple_html output contains no namespace metadata`, and `simple_html escapes special characters`.
-Namespace detail normalizes its input, raises `UnknownGrantError` when ungranted, and lists direct children only.
+Counts and links follow `len of a store counts its active grants` with `a namespace string is in a store when its normalized form holds a grant` with `parent returns the granted parent name as a string` with `children returns the granted child names as a sorted list of strings` with `transfer that would overlap another owner's grant raises OverlapError` with `a missing middle grant breaks the parent and children links`.
 
-Ship fixture tooling at `Tools/packagenamespaces/gen_fixtures.sh` that takes an output directory and writes `grants.json`, `projects.json`, `grandfathered.json`, and `second-index.json`.
-Fixtures follow `grants.json holds {"grants": [{"name": "<name>", "owner": "<owner>"}]}` and `grants.json lists at least two name and owner entries`.
-Projects follow `projects.json holds {"projects": {"<project>": "<owner>"}}`.
-Exemptions follow `grandfathered.json holds {"grandfathered": ["<project>"]}`.
-Isolation follows `second-index.json holds {"grants": [], "projects": {"<project>": "<owner>"}}`.
-Ship verification at `Tools/packagenamespaces/verify_offline.sh` that takes a fixture directory, exits 0 on success, and prints `verify: all checks passed`.
-Coverage follows `verify_offline exits nonzero when fixtures are missing` and `verify_offline exits nonzero when fixtures are damaged`.
-Scripts keep no network use in either script.
+Upload control exposes `authorize_upload` with `GrandfatheredRegistry` with `UploadConflictError` with `CONFLICT_STATUS = 409` with 409 Conflict and registry operations include `GrandfatheredRegistry.add` with `GrandfatheredRegistry.discard` with `GrandfatheredRegistry.covers` with `GrandfatheredRegistry.projects` alongside conflict fields `UploadConflictError.status_code` with `UploadConflictError.project` with `UploadConflictError.namespace` with `UploadConflictError.owner` where outcomes use `True` with `False` and `normalization runs before the upload check` with `UploadConflictError.owner is the uploader that attempted the upload` with `the conflict reports the owner argument, not the grant holder` with `authorize_upload rejects empty or non-string owners with ValueError` with `owner validation runs before any grant is consulted`.
 
-Document the feature in `Doc/library/packagenamespaces.rst`, list that page from `Doc/library/distribution.rst`, note the release in `Doc/whatsnew/3.16.rst`, and add a news fragment under `Misc/NEWS.d/next/Library/`.
-Documentation follows `library page names PEP 752 in prose or through the :pep: role` alongside `SecurityPolicy` and `RepositoryIndex` while the news and release notes name `packagenamespaces` and PEP 752.
+Registry membership follows `len of a registry counts its exempt projects` with `a project string is in a registry when its normalized form is exempt`.
 
-Build files follow `Makefile.pre.in LIBSUBDIRS lists packagenamespaces`.
-Headers follow `Python/stdlib_module_names.h lists packagenamespaces`.
-Installs follow `normal make install ships the new package`.
-Runtime follows `sys.stdlib_module_names contains packagenamespaces`.
+Repository state centers on `RepositoryIndex` with version markers 1.5 with 1.4 with `NotSupportedError` with `API_VERSION is the string "1.5"` with `LEGACY_API_VERSION is the string "1.4"` and operations include `RepositoryIndex.register_project` with `RepositoryIndex.project_owner` with `RepositoryIndex.projects` with `RepositoryIndex.project_detail` with `RepositoryIndex.list_namespaces` with `RepositoryIndex.namespace_detail` with `RepositoryIndex.simple_html` with `RepositoryIndex.store` with `RepositoryIndex.supports_namespaces` with `RepositoryIndex.grandfathered` with `RepositoryIndex.api_version` where `project_owner returns None when unknown` with `register_project records ownership without authorizing uploads` with `a stranger-owned project under a reserved prefix still registers`.
+
+Project views return `{"name": "<project>", "namespaces": null}` with `{"name": "<project>", "namespaces": [{"name": "<namespace>", "owned": true}]}` with `{"name": "<namespace>", "owned": false}` with `{"name": "<namespace>"}` with `{"name": "<namespace>", "parent": "<parent>", "children": ["<child>"], "owner": "<owner>"}` with `"parent": null` with `{"api_version": "1.5", "namespaces": [{"name": "<namespace>"}]}` with `{"filename": "<file>", "url": "<url>"}` where `owned is true when the project owner holds the grant` with `owned is false for grandfathered projects` with `matches sorted by name in project_detail` with `grant removal sets project_detail namespaces to null` with `/namespaces` with `/namespace/<namespace>` with `legacy repositories omit the namespaces key` with `HTML Simple API is unchanged` with `simple_html output contains no namespace metadata` with `simple_html escapes special characters` with `simple_html renders a full HTML document with doctype` with `simple_html title and heading name the project` with `simple_html renders one anchor per file in order with href and filename`.
+
+Installer decisions center on `SecurityPolicy` with `SecurityPolicy.allows` with `SecurityPolicy.evaluate` with `SecurityPolicy.namespaces` with `SecurityPolicy.owner` where `evaluate returns normalized-name to boolean mapping` with `project owner must equal the policy owner` with `matching policy namespace must hold an active grant for that owner` with `unknown projects denied` with `ungranted namespaces denied` with `grandfathered foreign projects denied` with `grants are per-repository` with `a grant on one index confers nothing on another`.
+
+The command layer exposes `main(argv)` with `reserve <namespace> --owner <owner>` with `list --json` with `show <namespace>` with `show <namespace> --json` with `remove <namespace>` with `register <project> --owner <owner>` with `grandfather <project> --owner <owner>` with `check-upload <project> --owner <owner>` with `dump --project <project>` alongside flags `--store` with `--owner` with `--json` with `--project` with `--help`.
+
+Persistence uses `{"grants": {"<namespace>": "<owner>"}, "projects": {"<project>": "<owner>"}, "grandfathered": ["<project>"]}` with `[{"name": "<namespace>", "owner": "<owner>"}]` where `the CLI persists exactly the documented store schema` with `a hand-written documented store loads back` with `grandfather records the project owner and exempts the project` with `list --json prints name and owner entries` with `bare dump prints the versioned namespace envelope` with `dump entries carry names only, from list_namespaces` with `dump --project prints one project detail mapping`.
+
+Visible lines include `reserved <namespace> for <owner>` with `removed <namespace>` with `registered <project> for <owner>` with `grandfathered <project>` with `OK <project>` with `<namespace> <owner>` with `name: <name>` with `owner: <owner>` with `parent: <parent>` with `children: <children>` with `parent: none` with `children: none`.
+
+Exit behavior follows `show unknown exits 1` with `unknown grant` with `reserve overlap exits 1` with `overlaps the grant` with `check-upload allowed exits 0` with `check-upload denied exits 3 with 409 Conflict` with `CONFLICT_EXIT = 3` with `exit status 3` with `corrupt store exits 1` with `empty owner exits 1` with `check-upload with an empty owner exits 1 even for unreserved projects` with `corrupt store message contains error` with `empty owner message contains error` with `non-string owners or entries in a store exit 1`.
+
+Offline fixtures use `Tools/packagenamespaces/gen_fixtures.sh` with `Tools/packagenamespaces/verify_offline.sh` around `grants.json` with `projects.json` with `grandfathered.json` with `second-index.json` where `verify: all checks passed` signals success with `no network use in either script` with `verify_offline exits nonzero when fixtures are missing` with `verify_offline exits nonzero when fixtures are damaged` with `verify_offline validates every fixture shape before checking` with `a malformed second index fails verification` with `grants.json holds {"grants": [{"name": "<name>", "owner": "<owner>"}]}` with `grants.json lists at least two name and owner entries` with `projects.json holds {"projects": {"<project>": "<owner>"}}` with `grandfathered.json holds {"grandfathered": ["<project>"]}` with `second-index.json holds {"grants": [], "projects": {"<project>": "<owner>"}}`.

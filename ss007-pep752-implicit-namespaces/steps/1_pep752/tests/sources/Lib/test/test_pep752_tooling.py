@@ -141,6 +141,56 @@ class CliTests(unittest.TestCase):
         self.assertEqual(status, 1)
         self.assertIn("error", error.lower())
 
+    def test_cli_check_upload_rejects_empty_owner(self):
+        self.require_impl()
+        status, _, error = self.invoke("check-upload", "unreserved", "--owner", "")
+        self.assertEqual(status, 1)
+        self.assertIn("error", error.lower())
+        self.reserve_acme()
+        status, _, error = self.invoke("check-upload", "acme-new", "--owner", "")
+        self.assertEqual(status, 1)
+        self.assertIn("error", error.lower())
+
+    def test_cli_loads_documented_store_schema(self):
+        self.require_impl()
+        with open(self.store, "w", encoding="utf-8") as stream:
+            json.dump({
+                "projects": {"acme-legacy": "mallory", "acme-new": "acme-corp"},
+                "grandfathered": ["acme-legacy"],
+                "grants": {"acme": "acme-corp"},
+            }, stream)
+        status, output, error = self.invoke("list")
+        self.assertEqual(status, 0, error)
+        self.assertEqual(output.strip(), "acme acme-corp")
+        status, _, error = self.invoke(
+            "check-upload", "acme-new", "--owner", "mallory",
+        )
+        self.assertEqual(status, 3, error)
+        status, output, error = self.invoke(
+            "check-upload", "acme-legacy", "--owner", "mallory",
+        )
+        self.assertEqual(status, 0, error)
+        self.assertEqual(output.strip(), "OK acme-legacy")
+
+    def test_cli_persists_documented_store_schema(self):
+        self.require_impl()
+        self.reserve_acme()
+        status, _, error = self.invoke(
+            "register", "acme-new", "--owner", "acme-corp",
+        )
+        self.assertEqual(status, 0, error)
+        status, _, error = self.invoke(
+            "grandfather", "acme-legacy", "--owner", "mallory",
+        )
+        self.assertEqual(status, 0, error)
+        with open(self.store, encoding="utf-8") as stream:
+            document = json.load(stream)
+        self.assertEqual(document, {
+            "projects": {"acme-legacy": "mallory", "acme-new": "acme-corp"},
+            "grandfathered": ["acme-legacy"],
+            "grants": {"acme": "acme-corp"},
+        })
+
     def test_cli_register_and_grandfather(self):
         self.require_impl()
         status, output, error = self.invoke(
@@ -279,6 +329,7 @@ class HarnessTests(unittest.TestCase):
         for filename, replacement in (
             ("projects.json", "{}"),
             ("grants.json", "{not valid json"),
+            ("second-index.json", '{"grants": "acme", "projects": {"x": "y"}}'),
         ):
             with self.subTest(filename=filename):
                 with tempfile.TemporaryDirectory() as directory:
@@ -294,8 +345,24 @@ class HarnessTests(unittest.TestCase):
                                     result.stdout + result.stderr)
                 self.assertNotIn("verify: all checks passed", result.stdout)
 
+    def test_scripts_use_no_network(self):
+        pattern = (
+            r"\b(?:socat|ncat|nc|telnet|lftp|ftp|sftp|scp|ssh|wget|curl|"
+            r"httpx|http\.client|urllib)\b"
+        )
+        for filename in ("gen_fixtures.sh", "verify_offline.sh"):
+            with self.subTest(filename=filename):
+                path = os.path.join(REPO_ROOT, "Tools", "packagenamespaces", filename)
+                with open(path, encoding="utf-8") as stream:
+                    self.assertNotRegex(stream.read(), pattern)
+
 
 class DocsTests(unittest.TestCase):
+    def test_distribution_lists_new_page(self):
+        path = os.path.join(REPO_ROOT, "Doc", "library", "distribution.rst")
+        with open(path, encoding="utf-8") as stream:
+            self.assertIn("packagenamespaces", stream.read())
+
     def test_news_entry_exists(self):
         pattern = os.path.join(REPO_ROOT, "Misc", "NEWS.d", "next", "Library", "*.rst")
         for path in sorted(glob.glob(pattern)):

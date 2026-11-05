@@ -1,11 +1,12 @@
 #!/bin/bash
 # Grade one trial: install test_patch, run the suite, derive reward from data.
 #
-# The reward is computed from the parser's per-test verdicts compared
-# against this unit's fail_to_pass/pass_to_pass lists -- never from a
-# process exit status, which agent code running inside the suite could
-# forge.  A zero reward is written BEFORE the parser runs, so a parser
-# that dies leaves a zero rather than nothing.
+# The reward is computed from TWO data channels: the parser's per-test
+# verdicts compared against this unit's fail_to_pass/pass_to_pass lists,
+# AND the independent probe's pass/fail payload -- never from a process
+# exit status, which agent code running inside the suite could forge.  A
+# zero reward is written BEFORE the parser runs, so a parser that dies
+# leaves a zero rather than nothing.
 REPO=/app
 [ -d "$REPO" ] || REPO=/testbed
 TESTS_DIR=/tests
@@ -78,6 +79,19 @@ bash "$TESTS_DIR/run_script.sh" $SELECTED \
 # reads the original, never this copy.
 cp -f "${LAMBO_JUNIT_XML:-/tmp/lambo-junit.xml}" "$LOG_DIR/junit.xml" 2>/dev/null || true
 
+# 2.5. Independent behavioral probe: the second reward channel. The suite
+# above runs agent code in-process, which can rewrite the JUnit report
+# after a genuine failing run (an atexit hook suffices), so a report-only
+# grader scores a forgery. The probe re-checks the specified behaviors in
+# a FRESH locked-down interpreter (absolute path, -I -S, neutral cwd,
+# scrubbed environment) from the verifier-owned /tests tree, and it never
+# reads the report. Reward needs the probe AND every required suite id.
+# A missing or unreadable probe payload fails closed in step 4.
+rm -f "$LOG_DIR/probe.json"
+(cd / && env -u PYTHONPATH PYTHONSAFEPATH=1 "$REPO/python" -I -S \
+    "$TESTS_DIR/probe.py" "$REPO" "$LOG_DIR/probe.json" \
+    2>"$LOG_DIR/probe.err") || true
+
 # 3. Parse the raw output with the grader's interpreter (never the repo's:
 #    the agent owns that tree).  -I -S drops PYTHONPATH, cwd and site so a
 #    sitecustomize shim cannot silence the parser.
@@ -85,7 +99,9 @@ cp -f "${LAMBO_JUNIT_XML:-/tmp/lambo-junit.xml}" "$LOG_DIR/junit.xml" 2>/dev/nul
     "$LOG_DIR/test-stdout.txt" "$LOG_DIR/test-stderr.txt" \
     "$LOG_DIR/output.json" 2>"$LOG_DIR/parser.err" || true
 
-# 4. Reward 1 iff every required id is present with status PASSED.
+# 4. Reward 1 iff every required id is present with status PASSED AND the
+# independent probe passed. Either channel alone is insufficient: a forged
+# JUnit report fails the probe, and a suite failure fails the id check.
 "$PY" -I -S - "$CONFIG" "$LOG_DIR" <<'PY' 2>"$LOG_DIR/reward.err" || true
 import json, os, sys
 
@@ -103,9 +119,14 @@ cfg = load(config_path, {})
 required = list(cfg.get("fail_to_pass") or []) + list(cfg.get("pass_to_pass") or [])
 got = load(os.path.join(log_dir, "output.json"), {})
 status = {t.get("name"): t.get("status") for t in got.get("tests", [])}
+probe = load(os.path.join(log_dir, "probe.json"), {})
+probe_passed = probe.get("passed") is True
+if not probe_passed:
+    print(f"reward: probe did not pass: {probe.get('failed', '?')}",
+          file=sys.stderr)
 
 reward = 0.0
-if required and all(status.get(t) == "PASSED" for t in required):
+if required and probe_passed and all(status.get(t) == "PASSED" for t in required):
     reward = 1.0
 
 with open(os.path.join(log_dir, "reward.txt"), "w", encoding="utf-8") as handle:

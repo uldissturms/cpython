@@ -25,9 +25,9 @@
             },
             {
               "job": {
-                "createdAt": "2026-11-04T11:23:44.885212",
-                "id": "2026-11-04__11-23-43__0615ea",
-                "meanReward": null,
+                "createdAt": "2026-11-04T16:21:17.803563",
+                "id": "2026-11-04__16-21-16__e4c974",
+                "meanReward": 0.0,
                 "modelTotal": 1,
                 "source": "local",
                 "status": "completed",
@@ -40,7 +40,7 @@
             }
           ],
           "source": "local",
-          "task": "6bb02d3b-6200-47f7-bd35-14f767761593"
+          "task": "34c3d2a7-b814-497f-9669-d55d5b8bf195"
         },
         "reason": "no passing agent trajectory in the local jobs \u2014 an oracle has no agent turns, and a failed rollout has no peak to measure"
       },
@@ -89,9 +89,9 @@
             },
             {
               "job": {
-                "createdAt": "2026-11-04T11:23:44.885212",
-                "id": "2026-11-04__11-23-43__0615ea",
-                "meanReward": null,
+                "createdAt": "2026-11-04T16:21:17.803563",
+                "id": "2026-11-04__16-21-16__e4c974",
+                "meanReward": 0.0,
                 "modelTotal": 1,
                 "source": "local",
                 "status": "completed",
@@ -104,7 +104,7 @@
             }
           ],
           "source": "local",
-          "task": "6bb02d3b-6200-47f7-bd35-14f767761593"
+          "task": "34c3d2a7-b814-497f-9669-d55d5b8bf195"
         },
         "reason": "no passing agent trajectory in the local jobs \u2014 an oracle has no agent turns, and a failed rollout has no peak to measure"
       },

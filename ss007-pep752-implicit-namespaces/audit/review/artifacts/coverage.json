@@ -1,1 +1,4 @@
-{"method": {"backend": "py-trace (task-specific rung-2 backend: stdlib trace under /app/python, converted to LCOV)", "caveat": "line-only, branch n/a; subprocess `python -m` entrypoint lines read 0 (measurement blind spot, kept in R)"}, "steps": [{"branch_pct": null, "line_pct": 96.7, "lines_hit": 497, "lines_total": 514, "reachable_ceiling_pct": 98.6, "state": "MEASURED", "step": "1_pep752"}]}
+{"method": {"backend": "py_trace_cov.sh v2 (stdlib trace LCOV; test.sh pre-run for InstallTests)", "caveat": "line-only backend: branch n/a; entrypoint subprocess-blind but tested; C header unmeasured but asserted"},
+ "steps": [{"step": "1_pep752", "lines_total": 543, "lines_hit": 519,
+            "line_pct": 95.6, "branch_pct": null,
+            "reachable_ceiling_pct": 96.8, "state": "MEASURED"}]}

@@ -1,0 +1,156 @@
+{
+  "attempts": [
+    {
+      "attempt_id": "codex/ss007-pep752-implicit-namespaces__7mR6TNn",
+      "model": "gpt-6.1-sol",
+      "recorded_verdict": "UNKNOWN",
+      "result": "GRADING_FAILURE"
+    }
+  ],
+  "degraded_reason": "",
+  "difficulty": "MIXED",
+  "failed_rubrics": [
+    "R01",
+    "R02",
+    "R03",
+    "R06",
+    "R07",
+    "R08",
+    "R09",
+    "R12"
+  ],
+  "hacked": [],
+  "prompt_origin": "manifold:aai_eval_baselines/tree/agentic-review-resources/prompts",
+  "prompt_sha256": "12a7e6acf75beaf39f7a432a972a1f913aae2798cbf69fe46b499f9b383b3299",
+  "rubrics": [
+    {
+      "dimension": "Task Quality",
+      "evidence": "The instruction omits container protocols for GrantStore and GrandfatheredRegistry, return types for parent/children, and fixture schemas; no existing packagenamespaces code supplies these contracts. It also writes API_VERSION = 1.5 while grading requires the string \"1.5\", and does not provide the HTML template that grading pins.",
+      "focus": "Spec sufficiency",
+      "id": "R01",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Task Quality",
+      "evidence": "test_pep752_metadata.MetadataTests.test_html_byte_stable requires the reference renderer's exact whitespace and br syntax, although the instruction requires unchanged, escaped HTML without namespace metadata. test_pep752_tooling additionally requires literal source text \"PEP 752\", dict-shaped fixture documents with name/owner records, and the word \"error\" in diagnostics, beyond the stated behavioral requirements.",
+      "focus": "Spec-test alignment",
+      "id": "R02",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Task Quality",
+      "evidence": "Only one rollout exists, so no cross-model failure pattern can be inferred; however, replay of that saved solution directly demonstrates specification-driven mismatches. Its valid HTML, standard :pep:`752` documentation role, numeric API constants, and self-consistent fixture encoding fail requirements that the visible instruction does not unambiguously establish.",
+      "focus": "Trajectory-informed spec check",
+      "id": "R03",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Task Quality",
+      "evidence": "The solver must design and implement interacting grant lifecycle, ownership, upload, metadata, policy, persistence, CLI, and offline-tool behaviors. The specification gives rules and interfaces but does not supply an implementation recipe for coordinating them.",
+      "focus": "Reasoning required",
+      "id": "R04",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Task Quality",
+      "evidence": "The taskfiles definition, golden patch, and grading configuration are review-only; the solving environment has the original CPython tree and shallow base history, with no existing implementation. The supplied trajectory shows independent research and coding, with no access to golden files, hidden test names, or reward artifacts.",
+      "focus": "Information isolation",
+      "id": "R05",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "The suite misses trailing-newline name rejection, value-level corrupt stores, conflicting transfers, and normal installed-library availability; the reference has defects in these areas while passing every required test. It also never checks that verify_offline.sh rejects missing or damaged fixtures, and checks required diagnostic phrases only through weaker substrings.",
+      "focus": "Test coverage",
+      "id": "R06",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "A reviewer-created variant replaced verify_offline.sh with a script that only prints \"verify: all checks passed\" and changed the required \"unknown grant\" and \"overlaps the grant\" diagnostics; all 435 required checks still passed. This is a demonstrated success-marker shortcut rather than merely a hypothetical weakness.",
+      "focus": "Reward-hacking",
+      "id": "R07",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "A correct renderer can use different indentation or br markup, and a CPython documentation page can mention the PEP through :pep:`752`; the tests reject both valid alternatives. The saved attempt also demonstrates rejection of a functional alternative fixture schema that the instruction never forbids.",
+      "focus": "Accepts alternatives",
+      "id": "R08",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "The sole end-to-end trial never produced a verdict: artifact collection reported incomplete capture of /app and the separate verifier raised RuntimeError before test execution. Local suite replays complete predictably in about six seconds, locating the observed reliability failure at the artifact/verifier boundary rather than in flaky assertions.",
+      "focus": "Test reliability",
+      "id": "R09",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "Independent replay on the unmodified base gives zero of 95 fail-to-pass IDs passing, while all 340 required pass-to-pass IDs pass. The new tests therefore discriminate an unsolved baseline from an implemented package.",
+      "focus": "Test validity",
+      "id": "R10",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "The complete selected suite ran 489 test cases, including skips and nonrequired baseline cases, in approximately six seconds on CPU. Verification is much cheaper than implementing the package and requires neither human review nor external services.",
+      "focus": "Verification efficiency",
+      "id": "R11",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Golden Solution Quality",
+      "evidence": "The reference omits packagenamespaces from Makefile.pre.in LIBSUBDIRS, so normal make install omits the new standard-library package, and it does not register sys.stdlib_module_names. Direct probes also show is_valid_namespace(\"foo\\n\") returning True, nested transfer creating different overlapping owners, and main(argv) raising ValueError/TypeError for corrupt store values instead of returning the promised status.",
+      "focus": "Golden correctness",
+      "id": "R12",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Golden Solution Quality",
+      "evidence": "Independent replay of the exact reference patch and config.json test patch passed all 95 fail-to-pass and 340 pass-to-pass IDs. No oracle rollout was supplied, so official end-to-end oracle reliability remains unestablished; there is no observed reference test failure.",
+      "focus": "Golden reliability",
+      "id": "R13",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Optional",
+      "evidence": "The namespace security problem is realistic, but the task adds an isolated repository/installer simulation to CPython rather than integrating a repository or installer implementation. PEP 752 does not itself establish a need for this invented standard-library API, making the project placement substantially synthetic.",
+      "focus": "Real-world relevance",
+      "id": "N01",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Optional",
+      "evidence": "The detailed instruction supplies the needed normalization, matching, ownership, policy, and metadata rules, and implementation uses ordinary Python libraries. The challenge is coordinating many interfaces rather than requiring deep CPython internals or a specialized algorithm unavailable to a competent generalist.",
+      "focus": "Knowledge depth",
+      "id": "N02",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Optional",
+      "evidence": "There is no supplied dataset whose cleanup or interpretation requires hidden assumptions. Small synthetic fixtures represent meaningful cases such as overlapping grants, legacy projects, and independent repositories; this task does not impose production-scale data requirements.",
+      "focus": "Data realism",
+      "id": "N03",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Optional",
+      "evidence": "Ownership invariants and persistence offer useful implementation challenges, but the current reward also depends on unpublished representation choices and a broken capture path. These incidental obstacles prevent the observed result from cleanly measuring improving implementation capability.",
+      "focus": "Training signal",
+      "id": "N04",
+      "verdict": "FAIL"
+    }
+  ],
+  "rubrics_used": true,
+  "secondary_issues": [
+    "BAD_GRADING_WEAK",
+    "BAD_AMBIGUOUS",
+    "BAD_GOLDEN",
+    "BAD_INFRA"
+  ],
+  "task_type": "SWEBENCH",
+  "tier": "container",
+  "verdict": "BAD_GRADING_WRONG"
+}

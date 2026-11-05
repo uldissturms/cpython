@@ -1,0 +1,98 @@
+<task_quality_review>
+ <task_type>SWEBENCH</task_type>
+ <plain_summary>
+  <task>The task asks for a new Python standard-library package implementing ownership of package-name prefixes under PEP 752. It must reserve and transfer names, block unauthorized uploads, and recognize exceptions for older projects. It must also produce repository metadata and decide which packages an installation policy trusts. A command-line tool persists this state in JSON, with offline fixture scripts for verification. Documentation and CPython build integration must make the package available after installation.</task>
+  <complexity>The main challenge is keeping ownership, nesting, upload permissions, and metadata consistent as grants change. The solver must distinguish project ownership from namespace ownership and keep grants isolated between repositories. Integrating the package into CPython adds build and installation work, while several unspecified interface choices introduce artificial difficulty.</complexity>
+ </plain_summary>
+ <rubric_results>
+  <rubric id="R01" dimension="Task Quality" focus="Spec sufficiency" statement="The task specification together with the agent's accessible environment (codebase, config files, dependencies) contain enough information to solve the problem. Things that are obvious to a domain expert don't need to be explicitly listed out, but there shouldn't be ambiguity in non-obvious details. If this task were to be given to a domain expert, they'd be able to solve it without any additional information.">
+   <verdict>FAIL</verdict>
+   <evidence>The prompt names UploadConflictError.owner without saying whether it identifies the uploader or grant holder, and mixes list entries with versioned envelopes without assigning each shape to a specific operation. Bare dump output and whether register_project merely records ownership or enforces upload authorization are also undefined; these are new APIs with no existing codebase contract.</evidence>
+  </rubric>
+  <rubric id="R02" dimension="Task Quality" focus="Spec-test alignment" statement="Every tested behavior traces to a requirement stated in the spec or clearly inferable from the environment or the task. Tests do not verify unstated requirements which might be unfair to the agent being graded.">
+   <verdict>FAIL</verdict>
+   <evidence>test_stranger_upload_conflicts requires the uploader in the owner attribute, while test_cli_dump requires a versioned namespace envelope for bare dump, neither explicitly specified. test_html_semantically_stable additionally requires the exact text Links for demo in both title and h1, although the instruction requires escaped HTML without namespace metadata.</evidence>
+  </rubric>
+  <rubric id="R03" dimension="Task Quality" focus="Trajectory-informed spec check" statement="When a significant proportion of model attempts fail on the same test or behavior, the spec clearly and unambiguously defines that behavior — ruling out ambiguity as the cause.">
+   <verdict>FAIL</verdict>
+   <evidence>Only one rollout is supplied, so cross-model agreement cannot be established. That rollout independently chose a versioned list_namespaces response, grant-holder error ownership, and raw-store dump output; its resulting failures expose choices the prompt does not clearly settle.</evidence>
+  </rubric>
+  <rubric id="R04" dimension="Task Quality" focus="Reasoning required" statement="The spec describes the goal (what needs to be achieved), and shouldn't lay out the whole step-by-step recipe (how to achieve it). If the whole recipe/algorithm is laid out in detail, then it should be complex enough that the agents are struggling to implement or code it correctly and pass the tests. In all other cases, the agent needs to reason and figure out the solution or approach.">
+   <verdict>PASS</verdict>
+   <evidence>Even with detailed interface requirements, implementing consistent grant lifecycle rules, live metadata, repository-local policies, persistence, CLI behavior, and CPython installation requires substantial design and implementation reasoning.</evidence>
+  </rubric>
+  <rubric id="R05" dimension="Task Quality" focus="Information isolation" statement="The solution shouldn't be exposed to the agent in any way. No leaks via: golden solution in env, test expected outputs/fixtures, editable grading tests, git history, READMEs, comments, or a check satisfiable by writing the expected artifact directly.">
+   <verdict>PASS</verdict>
+   <evidence>The Dockerfile starts from a shallow CPython checkout, and task definitions, reference solutions, and grading payloads are review-only rather than solver inputs. The trajectory shows independent implementation and self-authored tests, with no evidence of answer leakage or accessing hidden grading files.</evidence>
+  </rubric>
+  <rubric id="R06" dimension="Grading / Test Quality" focus="Test coverage" statement="Tests cover representative scenarios and important edge cases of every requirement stated in the task specification. No spec requirement should go untested.">
+   <verdict>FAIL</verdict>
+   <evidence>No test reads a successfully persisted store to assert its required schema; a private_payload wrapper passed all 99 non-install conformance tests. Coverage also misses sparse parent/child relationships, the distribution.rst link, network-free script execution, empty upload owners, and malformed mirror grant data.</evidence>
+  </rubric>
+  <rubric id="R07" dimension="Grading / Test Quality" focus="Reward-hacking" statement="The task shouldn't be reward-hackable where shortcuts, suboptimal solutions, or cheat codes are able to pass all the tests without genuinely solving the problem in the manner that the task describes.">
+   <verdict>FAIL</verdict>
+   <evidence>An experimentally substituted persistence layer wrote {"private_payload": {...}} and rejected normal store documents yet passed all 99 non-install tests; installation behavior was unchanged. The harness also trusts JUnit generated by the agent-owned /app/python and Lib/test runner while transferring all of /app, leaving an additional report-forgery route despite isolating the parser.</evidence>
+  </rubric>
+  <rubric id="R08" dimension="Grading / Test Quality" focus="Accepts alternatives" statement="Tests should be flexible, and shouldn't reject alternate solutions that might be used to solve the problem (as long as the spec allows for that level of flexibility).">
+   <verdict>FAIL</verdict>
+   <evidence>Replacing only simple_html with valid escaped HTML containing the required ordered artifact links, a project title, and no namespace metadata failed test_html_semantically_stable solely for lacking the reference title/h1 wording. No pre-existing renderer or public requirement fixes those presentation choices.</evidence>
+  </rubric>
+  <rubric id="R09" dimension="Grading / Test Quality" focus="Test reliability" statement="Tests are not flaky, not dependent on network/timing/unpinned environment, and do not spuriously time out. Results should be fairly consistent across runs and machines. The tasks should always run successfully and reliably return pass or fail for the respective category of submissions.">
+   <verdict>PASS</verdict>
+   <evidence>The recorded verifier completed normally in about 43 seconds, with empty parser/test-patch error logs and all 340 required regression tests passing. Development-interpreter crashes during solving were recovered by sequential execution and did not cause a grading crash or timeout.</evidence>
+  </rubric>
+  <rubric id="R10" dimension="Grading / Test Quality" focus="Test validity" statement="Every fail-to-pass test genuinely fails on the unmodified base code. No test already passes before the agent makes any changes.">
+   <verdict>PASS</verdict>
+   <evidence>Executing the 101 conformance methods against the unmodified environment produced failures throughout: the package and tools are absent, documentation/build registration is absent, and runtime membership is false. No already-passing fail-to-pass behavior was identified.</evidence>
+  </rubric>
+  <rubric id="R11" dimension="Grading / Test Quality" focus="Verification efficiency" statement="Solving requires substantially more reasoning than verifying. Grading runs in minutes, needs no human or GPU cluster, and scales to thousands of RL runs.">
+   <verdict>PASS</verdict>
+   <evidence>The recorded full verifier took about 43 seconds, including build/install preparation; its test run took 5.7 seconds. Verification is automated and much cheaper than implementing the package, with no human judgment or GPU requirement.</evidence>
+  </rubric>
+  <rubric id="R12" dimension="Golden Solution Quality" focus="Golden correctness" statement="The golden/reference solution correctly and completely implements every requirement stated in the specification and solves the problem.">
+   <verdict>FAIL</verdict>
+   <evidence>The reference CLI returns 0 and prints OK for check-upload unreserved --owner "", contradicting the required empty-owner exit status of 1. Its offline verifier also returns 0 and prints the success marker after second-index.json grants is changed from an array to a string, violating the damaged-fixture requirement.</evidence>
+  </rubric>
+  <rubric id="R13" dimension="Golden Solution Quality" focus="Golden reliability" statement="The golden solution passes all tests consistently across every oracle trial run with no failures or flakiness.">
+   <verdict>PASS</verdict>
+   <evidence>All 99 non-install conformance tests passed against an isolated extraction of the reference, including CLI, scripts, and documentation checks. No oracle trial was supplied; build/DECISIONS.md records successful full 441/441 reference probes, and the supplied evidence contains no current reference grading failure.</evidence>
+  </rubric>
+  <rubric id="N01" dimension="Optional" focus="Real-world relevance" statement="Would this change realistically be made in this project, and is it posed the way real work actually arrives — regardless of how hard it is?">
+   <verdict>FAIL</verdict>
+   <evidence>PEP 752 concerns package repositories and installers, while CPython has no existing repository service to extend. Adding a large new standard-library package for this purpose is a synthetic integration task rather than a change required by the PEP or a naturally scoped CPython issue.</evidence>
+  </rubric>
+  <rubric id="N02" dimension="Optional" focus="Knowledge depth" statement="Does the solution require specialized knowledge that a competent generalist lacks?">
+   <verdict>PASS</verdict>
+   <evidence>The work requires understanding packaging name normalization and repository metadata semantics, plus CPython standard-library registration, rebuilds, installation, and documentation conventions.</evidence>
+  </rubric>
+  <rubric id="N03" dimension="Optional" focus="Data realism" statement="Any seed data, input files, or environment fixtures used in the task are representative of real-world data — not obviously synthetic, overly simplified, or toy-scale in a way that trivializes the problem or makes the solution non-transferable to real scenarios.">
+   <verdict>PASS</verdict>
+   <evidence>The fixtures are small and synthetic but represent relevant ownership, nested grants, grandfathered foreign projects, and repository-isolation scenarios. Their size does not eliminate the underlying lifecycle and authorization reasoning.</evidence>
+  </rubric>
+  <rubric id="N04" dimension="Optional" focus="Training signal" statement="The task's difficulty stems from genuine reasoning or implementation challenges — not from incidental friction (wrong library version, missing import, trivial config mismatch) that, once learned, provides no further training signal. As models improve, the task should continue to differentiate capability levels rather than saturating after a single insight.">
+   <verdict>FAIL</verdict>
+   <evidence>The task contains genuine implementation challenges, but the observed zero reward is strongly affected by unspecified custom API choices and cascading fixture setup errors. Those arbitrary choices dilute the capability signal independently of the substantive namespace implementation.</evidence>
+  </rubric>
+ </rubric_results>
+ <task_quality>
+  <verdict>BAD_GRADING_WRONG</verdict>
+  <failed_rubrics>R01, R02, R03, R06, R07, R08, R12</failed_rubrics>
+  <secondary_issues>BAD_GRADING_WEAK, BAD_AMBIGUOUS, BAD_GOLDEN</secondary_issues>
+  <explanation>R08:Accepts alternatives fails because valid HTML is rejected for reference-specific presentation, giving BAD_GRADING_WRONG as the highest-severity applicable verdict. R06:Test coverage and R07:Reward-hacking imply BAD_GRADING_WEAK; R01:Spec sufficiency, R02:Spec-test alignment, and R03:Trajectory-informed spec check imply BAD_AMBIGUOUS; R12:Golden correctness implies BAD_GOLDEN. No observed pass exploited leakage, and no systematic grading infrastructure failure was found.</explanation>
+ </task_quality>
+ <task_difficulty>
+  <rating>MIXED</rating>
+  <explanation>The sole gpt-6.1-sol attempt completed a substantial implementation and passed 85/101 conformance tests plus all 340 required regression tests, but received binary reward zero. Genuine errors include treating a distant granted ancestor as a direct parent; artificial difficulty comes from undocumented output choices and registration semantics that caused cascading failures. Solving-time interpreter crashes were overcome rather than causing the final failure.</explanation>
+ </task_difficulty>
+ <grading_assessment>The grader installs six conformance modules and requires all 101 new and 340 regression IDs to be PASSED in a JUnit report; missing IDs fail closed, and console success text does not determine reward. The unmodified baseline fails the conformance suite, while the isolated reference passes all 99 non-install checks; no independent full-install oracle run was supplied. R08:Accepts alternatives is violated by the exact Links for demo title/h1 assertions in test_pep752_metadata.py. R01:Spec sufficiency and R02:Spec-test alignment are also violated by unresolved error-owner, registration, list-envelope, and bare-dump contracts. R06:Test coverage and R07:Reward-hacking fail because a nonconforming private_payload persistence schema passes all 99 non-install tests, while the two remaining tests only concern installation. Additional omissions include sparse parent/child links, the documentation toctree, script network access, and malformed fixtures beyond two examples. The reference itself demonstrates the empty-owner and malformed-mirror bugs under R12:Golden correctness. The observed run completed reliably, so the zero reward is not a timeout or infrastructure artifact.</grading_assessment>
+ <attempt_results>
+  <attempt>
+   <model>gpt-6.1-sol</model>
+   <attempt_id>ss007-pep752-implicit-namespaces__Ck6zhWo/1_pep752</attempt_id>
+   <recorded_verdict>FAIL</recorded_verdict>
+   <result>FAIL_REASONING</result>
+   <explanation>The completed implementation passed its 27 self-authored package tests and installation checks, but grading recorded 4 failures and 12 errors: authorization inside register_project blocked foreign-owner fixture setup, and error-owner, list, and dump shapes differed from grader expectations. Several scored mismatches are underspecified, so the recorded score is not wholly fair; nevertheless the attempt is genuinely incorrect because grants foo and foo-bar-baz produce parent foo and child foo-bar-baz despite PEP 752 requiring a single-component direct relationship. It neither hacked grading nor stopped incomplete, and solving-time crashes were recovered.</explanation>
+  </attempt>
+ </attempt_results>
+ <feedback_for_task_author>Resolve R01:Spec sufficiency, R02:Spec-test alignment, and R03:Trajectory-informed spec check by publishing signatures and explicit return examples for every new API: define whether UploadConflictError.owner is the uploader, make list_namespaces return an array, specify the bare dump envelope, and state whether register_project records existing state independently of upload checks. Fix R08:Accepts alternatives by removing the exact title/h1 wording from test_html_semantically_stable; assert escaped ordered links, valid HTML, and independence from grant state instead. For R06:Test coverage, read persisted JSON after every mutation, load valid externally seeded stores, test foo plus foo-bar-baz without foo-bar, check distribution.rst, and run scripts with networking disabled. Expand damaged-fixture cases to every file and each required field/type. Fix R12:Golden correctness by validating empty upload owners before authorization and validating the entire second-index schema. For R07:Reward-hacking, add the private_payload storage variant as a negative control, retain the runner and result channel outside agent-controlled artifacts, and transfer only permitted implementation/build changes rather than trusting the entire /app test runner. Re-run the full reference and an alternative implementation after these changes, and retain per-test oracle evidence.</feedback_for_task_author>
+</task_quality_review>

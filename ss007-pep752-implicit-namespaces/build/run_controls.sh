@@ -98,6 +98,12 @@ run_twice() {
 # pos: correct but differently written (regex-free normalize, split-based
 # matching, restructured upload checks).
 run_control pos alternate_core solve "$TASKDIR/build/ref_solutions/pos_alternate"
+# pos: alternate but equally valid HTML renderer (other title/heading
+# wording that names the project, list layout, extra anchor attribute).
+# Scores 0 on the pre-fix suite (which pins the reference `Links for`
+# wording) and 1 once the HTML test compares structurally with
+# project-naming title/heading.
+run_control pos alternate_html solve "$TASKDIR/build/ref_solutions/pos_alternate_html"
 # neg: the unsolved tree must score 0 (null/no-op control).
 run_control neg null_noop nosolve ""
 # neg: "always say yes" test-gaming (match-all + allow-all overlays).
@@ -118,5 +124,16 @@ run_control neg console_spoof solve "$TASKDIR/build/neg_controls/console_spoof"
 # reviewer's demonstrated bypass), 0 now that the suite pins the full
 # phrases and probes verify_offline with missing/damaged fixtures.
 run_control neg verify_spoof solve "$TASKDIR/build/neg_controls/verify_spoof"
+# neg: private-envelope persistence (writes {"private_payload": {...}} and
+# rejects documented store documents). Scores 1 on the suite alone
+# (replicates the pre-push reviewer's demonstrated bypass), 0 once the
+# persisted-schema tests and the independent probe pin the documented
+# schema in both directions.
+run_control neg store_spoof solve "$TASKDIR/build/neg_controls/store_spoof"
+# neg: JUnit-rewrite attack (broken implementation whose package import
+# arms an atexit hook overwriting the runner's report with all-PASSED).
+# Scores 1 on a report-only grader, 0 once the independent probe (which
+# never reads the report) joins the reward.
+run_control neg junit_forge solve "$TASKDIR/build/neg_controls/junit_forge"
 # twice: one solved container graded twice.
 run_twice "$STEP"

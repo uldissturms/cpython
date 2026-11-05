@@ -57,6 +57,8 @@ class GrandfatheredRegistry:
 
 
 def authorize_upload(project, owner, store, *, grandfathered=None):
+    if not isinstance(owner, str) or not owner:
+        raise ValueError("owner must be a non-empty string")
     target = normalize_name(project)
     if not isinstance(store, GrantStore):
         raise TypeError("store must be a GrantStore")

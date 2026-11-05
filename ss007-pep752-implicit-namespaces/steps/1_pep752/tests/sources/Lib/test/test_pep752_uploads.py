@@ -110,6 +110,15 @@ class UploadTests(unittest.TestCase):
                 "acme-other", "mallory", store, grandfathered=registry
             )
 
+    def test_authorize_upload_rejects_empty_owner(self):
+        self.require_impl()
+        store = self.make_store()
+        for project in ("acme-new", "requests"):
+            for owner in ("", None, 123):
+                with self.subTest(project=project, owner=owner):
+                    with self.assertRaises(ValueError):
+                        authorize_upload(project, owner, store)
+
 
 if __name__ == "__main__":
     unittest.main()

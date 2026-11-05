@@ -1,0 +1,70 @@
+<rubric_results>
+  <rubric id="R01" dimension="Task Quality" focus="Spec sufficiency" statement="The task specification together with the agent's accessible environment (codebase, config files, dependencies) contain enough information to solve the problem. Things that are obvious to a domain expert don't need to be explicitly listed out, but there shouldn't be ambiguity in non-obvious details. If this task were to be given to a domain expert, they'd be able to solve it without any additional information.">
+   <verdict>FAIL</verdict>
+   <evidence>The prompt names UploadConflictError.owner without saying whether it identifies the uploader or grant holder, and mixes list entries with versioned envelopes without assigning each shape to a specific operation. Bare dump output and whether register_project merely records ownership or enforces upload authorization are also undefined; these are new APIs with no existing codebase contract.</evidence>
+  </rubric>
+  <rubric id="R02" dimension="Task Quality" focus="Spec-test alignment" statement="Every tested behavior traces to a requirement stated in the spec or clearly inferable from the environment or the task. Tests do not verify unstated requirements which might be unfair to the agent being graded.">
+   <verdict>FAIL</verdict>
+   <evidence>test_stranger_upload_conflicts requires the uploader in the owner attribute, while test_cli_dump requires a versioned namespace envelope for bare dump, neither explicitly specified. test_html_semantically_stable additionally requires the exact text Links for demo in both title and h1, although the instruction requires escaped HTML without namespace metadata.</evidence>
+  </rubric>
+  <rubric id="R03" dimension="Task Quality" focus="Trajectory-informed spec check" statement="When a significant proportion of model attempts fail on the same test or behavior, the spec clearly and unambiguously defines that behavior — ruling out ambiguity as the cause.">
+   <verdict>FAIL</verdict>
+   <evidence>Only one rollout is supplied, so cross-model agreement cannot be established. That rollout independently chose a versioned list_namespaces response, grant-holder error ownership, and raw-store dump output; its resulting failures expose choices the prompt does not clearly settle.</evidence>
+  </rubric>
+  <rubric id="R04" dimension="Task Quality" focus="Reasoning required" statement="The spec describes the goal (what needs to be achieved), and shouldn't lay out the whole step-by-step recipe (how to achieve it). If the whole recipe/algorithm is laid out in detail, then it should be complex enough that the agents are struggling to implement or code it correctly and pass the tests. In all other cases, the agent needs to reason and figure out the solution or approach.">
+   <verdict>PASS</verdict>
+   <evidence>Even with detailed interface requirements, implementing consistent grant lifecycle rules, live metadata, repository-local policies, persistence, CLI behavior, and CPython installation requires substantial design and implementation reasoning.</evidence>
+  </rubric>
+  <rubric id="R05" dimension="Task Quality" focus="Information isolation" statement="The solution shouldn't be exposed to the agent in any way. No leaks via: golden solution in env, test expected outputs/fixtures, editable grading tests, git history, READMEs, comments, or a check satisfiable by writing the expected artifact directly.">
+   <verdict>PASS</verdict>
+   <evidence>The Dockerfile starts from a shallow CPython checkout, and task definitions, reference solutions, and grading payloads are review-only rather than solver inputs. The trajectory shows independent implementation and self-authored tests, with no evidence of answer leakage or accessing hidden grading files.</evidence>
+  </rubric>
+  <rubric id="R06" dimension="Grading / Test Quality" focus="Test coverage" statement="Tests cover representative scenarios and important edge cases of every requirement stated in the task specification. No spec requirement should go untested.">
+   <verdict>FAIL</verdict>
+   <evidence>No test reads a successfully persisted store to assert its required schema; a private_payload wrapper passed all 99 non-install conformance tests. Coverage also misses sparse parent/child relationships, the distribution.rst link, network-free script execution, empty upload owners, and malformed mirror grant data.</evidence>
+  </rubric>
+  <rubric id="R07" dimension="Grading / Test Quality" focus="Reward-hacking" statement="The task shouldn't be reward-hackable where shortcuts, suboptimal solutions, or cheat codes are able to pass all the tests without genuinely solving the problem in the manner that the task describes.">
+   <verdict>FAIL</verdict>
+   <evidence>An experimentally substituted persistence layer wrote {"private_payload": {...}} and rejected normal store documents yet passed all 99 non-install tests; installation behavior was unchanged. The harness also trusts JUnit generated by the agent-owned /app/python and Lib/test runner while transferring all of /app, leaving an additional report-forgery route despite isolating the parser.</evidence>
+  </rubric>
+  <rubric id="R08" dimension="Grading / Test Quality" focus="Accepts alternatives" statement="Tests should be flexible, and shouldn't reject alternate solutions that might be used to solve the problem (as long as the spec allows for that level of flexibility).">
+   <verdict>FAIL</verdict>
+   <evidence>Replacing only simple_html with valid escaped HTML containing the required ordered artifact links, a project title, and no namespace metadata failed test_html_semantically_stable solely for lacking the reference title/h1 wording. No pre-existing renderer or public requirement fixes those presentation choices.</evidence>
+  </rubric>
+  <rubric id="R09" dimension="Grading / Test Quality" focus="Test reliability" statement="Tests are not flaky, not dependent on network/timing/unpinned environment, and do not spuriously time out. Results should be fairly consistent across runs and machines. The tasks should always run successfully and reliably return pass or fail for the respective category of submissions.">
+   <verdict>PASS</verdict>
+   <evidence>The recorded verifier completed normally in about 43 seconds, with empty parser/test-patch error logs and all 340 required regression tests passing. Development-interpreter crashes during solving were recovered by sequential execution and did not cause a grading crash or timeout.</evidence>
+  </rubric>
+  <rubric id="R10" dimension="Grading / Test Quality" focus="Test validity" statement="Every fail-to-pass test genuinely fails on the unmodified base code. No test already passes before the agent makes any changes.">
+   <verdict>PASS</verdict>
+   <evidence>Executing the 101 conformance methods against the unmodified environment produced failures throughout: the package and tools are absent, documentation/build registration is absent, and runtime membership is false. No already-passing fail-to-pass behavior was identified.</evidence>
+  </rubric>
+  <rubric id="R11" dimension="Grading / Test Quality" focus="Verification efficiency" statement="Solving requires substantially more reasoning than verifying. Grading runs in minutes, needs no human or GPU cluster, and scales to thousands of RL runs.">
+   <verdict>PASS</verdict>
+   <evidence>The recorded full verifier took about 43 seconds, including build/install preparation; its test run took 5.7 seconds. Verification is automated and much cheaper than implementing the package, with no human judgment or GPU requirement.</evidence>
+  </rubric>
+  <rubric id="R12" dimension="Golden Solution Quality" focus="Golden correctness" statement="The golden/reference solution correctly and completely implements every requirement stated in the specification and solves the problem.">
+   <verdict>FAIL</verdict>
+   <evidence>The reference CLI returns 0 and prints OK for check-upload unreserved --owner "", contradicting the required empty-owner exit status of 1. Its offline verifier also returns 0 and prints the success marker after second-index.json grants is changed from an array to a string, violating the damaged-fixture requirement.</evidence>
+  </rubric>
+  <rubric id="R13" dimension="Golden Solution Quality" focus="Golden reliability" statement="The golden solution passes all tests consistently across every oracle trial run with no failures or flakiness.">
+   <verdict>PASS</verdict>
+   <evidence>All 99 non-install conformance tests passed against an isolated extraction of the reference, including CLI, scripts, and documentation checks. No oracle trial was supplied; build/DECISIONS.md records successful full 441/441 reference probes, and the supplied evidence contains no current reference grading failure.</evidence>
+  </rubric>
+  <rubric id="N01" dimension="Optional" focus="Real-world relevance" statement="Would this change realistically be made in this project, and is it posed the way real work actually arrives — regardless of how hard it is?">
+   <verdict>FAIL</verdict>
+   <evidence>PEP 752 concerns package repositories and installers, while CPython has no existing repository service to extend. Adding a large new standard-library package for this purpose is a synthetic integration task rather than a change required by the PEP or a naturally scoped CPython issue.</evidence>
+  </rubric>
+  <rubric id="N02" dimension="Optional" focus="Knowledge depth" statement="Does the solution require specialized knowledge that a competent generalist lacks?">
+   <verdict>PASS</verdict>
+   <evidence>The work requires understanding packaging name normalization and repository metadata semantics, plus CPython standard-library registration, rebuilds, installation, and documentation conventions.</evidence>
+  </rubric>
+  <rubric id="N03" dimension="Optional" focus="Data realism" statement="Any seed data, input files, or environment fixtures used in the task are representative of real-world data — not obviously synthetic, overly simplified, or toy-scale in a way that trivializes the problem or makes the solution non-transferable to real scenarios.">
+   <verdict>PASS</verdict>
+   <evidence>The fixtures are small and synthetic but represent relevant ownership, nested grants, grandfathered foreign projects, and repository-isolation scenarios. Their size does not eliminate the underlying lifecycle and authorization reasoning.</evidence>
+  </rubric>
+  <rubric id="N04" dimension="Optional" focus="Training signal" statement="The task's difficulty stems from genuine reasoning or implementation challenges — not from incidental friction (wrong library version, missing import, trivial config mismatch) that, once learned, provides no further training signal. As models improve, the task should continue to differentiate capability levels rather than saturating after a single insight.">
+   <verdict>FAIL</verdict>
+   <evidence>The task contains genuine implementation challenges, but the observed zero reward is strongly affected by unspecified custom API choices and cascading fixture setup errors. Those arbitrary choices dilute the capability signal independently of the substantive namespace implementation.</evidence>
+  </rubric>
+ </rubric_results>

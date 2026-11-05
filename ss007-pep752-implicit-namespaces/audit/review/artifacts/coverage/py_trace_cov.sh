@@ -11,6 +11,11 @@
 # Known undercount (documented, not hidden): tests that shell out to
 # `python -m packagenamespaces` run outside the traced process, so entrypoint
 # lines read 0 even when the entrypoint test passes. Listed in warnings.txt.
+#
+# v2 (2026-11-04 review): runs steps/1_pep752/tests/test.sh before the traced
+# suite (mirror of build/run_coverage.sh) so the InstallTests see the DESTDIR
+# install. Without it the suite reads 99/101 and the 2 failures are backend
+# environment, not golden defects.
 set -uo pipefail
 
 TASKDIR="${1:?task dir}"; OUT="${2:?output dir}"
@@ -35,10 +40,18 @@ trap cleanup EXIT
 
 docker exec "$CID" bash -c 'rm -rf /solution && mkdir -p /solution' >/dev/null 2>&1
 docker cp "$TASKDIR/steps/$STEP/solution/." "$CID:/solution/" >/dev/null 2>&1
+docker cp "$TASKDIR/steps/$STEP/tests/." "$CID:/tests/" >/dev/null 2>&1
 docker exec "$CID" bash /solution/solve.sh >/dev/null 2>&1 || {
   echo "backend: solve.sh failed" >&2; exit 1
 }
-# Install the graded tests from the CURRENT config (mirror of test.sh step 1).
+# Run the real test.sh first (mirror of build/run_coverage.sh): it performs the
+# DESTDIR install the InstallTests assert on. Non-fatal; the traced suite below
+# is the pass/fail signal.
+docker exec "$CID" bash /tests/test.sh >/dev/null 2>&1 || {
+  echo "backend: test.sh rc=$? (continuing)" >&2
+}
+# Ensure the graded tests are present (test.sh installs them idempotently).
+if ! docker exec "$CID" test -f /app/Lib/test/test_pep752_naming.py >/dev/null 2>&1; then
 python3 - "$TASKDIR/steps/$STEP/tests/config.json" > "$OUT/test_patch.diff" <<'PY'
 import json, sys
 cfg = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -48,6 +61,7 @@ docker cp "$OUT/test_patch.diff" "$CID:/tmp/test_patch.diff" >/dev/null 2>&1
 docker exec "$CID" bash -c 'git -C /app apply --verbose - < /tmp/test_patch.diff' >/dev/null 2>&1 || {
   echo "backend: test_patch does not apply" >&2; exit 1
 }
+fi
 
 docker exec -i "$CID" ./python - <<'PY' > "$OUT/trace.json"
 import json, sys, trace, unittest

@@ -188,6 +188,26 @@
   "Makefile.pre.in LIBSUBDIRS lists packagenamespaces",
   "Python/stdlib_module_names.h lists packagenamespaces",
   "normal make install ships the new package",
-  "sys.stdlib_module_names contains packagenamespaces"
+  "sys.stdlib_module_names contains packagenamespaces",
+  "a missing middle grant breaks the parent and children links",
+  "UploadConflictError.owner is the uploader that attempted the upload",
+  "the conflict reports the owner argument, not the grant holder",
+  "authorize_upload rejects empty or non-string owners with ValueError",
+  "owner validation runs before any grant is consulted",
+  "register_project records ownership without authorizing uploads",
+  "a stranger-owned project under a reserved prefix still registers",
+  "simple_html renders a full HTML document with doctype",
+  "simple_html title and heading name the project",
+  "simple_html renders one anchor per file in order with href and filename",
+  "the CLI persists exactly the documented store schema",
+  "a hand-written documented store loads back",
+  "grandfather records the project owner and exempts the project",
+  "list --json prints name and owner entries",
+  "bare dump prints the versioned namespace envelope",
+  "dump entries carry names only, from list_namespaces",
+  "dump --project prints one project detail mapping",
+  "check-upload with an empty owner exits 1 even for unreserved projects",
+  "verify_offline validates every fixture shape before checking",
+  "a malformed second index fails verification"
  ]
 }

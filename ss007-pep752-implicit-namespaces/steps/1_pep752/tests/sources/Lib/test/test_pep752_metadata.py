@@ -161,6 +161,12 @@ class MetadataTests(unittest.TestCase):
         self.assertEqual(index.project_owner("acme-new"), "acme-corp")
         self.assertIsNone(index.project_owner("anything-at-all"))
 
+    def test_register_project_records_without_authorization(self):
+        self.require_impl()
+        _, index = self.make_index()
+        index.register_project("acme-squat", "mallory")
+        self.assertEqual(index.project_owner("acme-squat"), "mallory")
+
     def test_legacy_endpoints_raise_not_supported(self):
         self.require_impl()
         store, _ = self.make_index()
@@ -238,8 +244,9 @@ class MetadataTests(unittest.TestCase):
             with self.subTest(tag=tag):
                 self.assertRegex(
                     page,
-                    rf"(?i:<{tag}\b[^>]*>)\s*Links for demo"
-                    rf"\s*(?i:</{tag}\s*>)",
+                    rf"(?i:<{tag}\b[^>]*>)"
+                    rf"(?:(?!(?i:</{tag}\s*>))[\s\S])*?demo"
+                    rf"[\s\S]*?(?i:</{tag}\s*>)",
                 )
         anchors = []
         for file in files:

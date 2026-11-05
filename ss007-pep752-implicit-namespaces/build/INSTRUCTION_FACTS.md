@@ -85,6 +85,7 @@ namespaces returns sorted names
 matching returns sorted grants
 parent is the granted direct parent or None
 children are granted direct children, sorted
+a missing middle grant breaks the parent and children links
 
 ## Uploads (uploads)
 
@@ -95,7 +96,11 @@ CONFLICT_STATUS = 409
 409 Conflict
 status_code
 UploadConflictError carries project, namespace, owner
+UploadConflictError.owner is the uploader that attempted the upload
+the conflict reports the owner argument, not the grant holder
 authorize_upload returns True when allowed
+authorize_upload rejects empty or non-string owners with ValueError
+owner validation runs before any grant is consulted
 stranger upload under a reserved prefix raises UploadConflictError
 owner upload under own grant is allowed
 unreserved project upload is allowed
@@ -134,6 +139,8 @@ RepositoryIndex.supports_namespaces
 RepositoryIndex.grandfathered
 RepositoryIndex.api_version
 project_owner returns None when unknown
+register_project records ownership without authorizing uploads
+a stranger-owned project under a reserved prefix still registers
 project_detail returns name and namespaces keys
 {"name": "<project>", "namespaces": null}
 {"name": "<project>", "namespaces": [{"name": "<namespace>", "owned": true}]}
@@ -160,6 +167,9 @@ legacy repositories report version 1.4
 legacy list and detail raise NotSupportedError
 supporting repositories report version 1.5
 simple_html takes project and files with filename and url
+simple_html renders a full HTML document with doctype
+simple_html title and heading name the project
+simple_html renders one anchor per file in order with href and filename
 HTML Simple API is unchanged
 simple_html output contains no namespace metadata
 simple_html escapes special characters
@@ -207,7 +217,14 @@ dump --project <project>
 --project
 --help
 {"grants": {"<namespace>": "<owner>"}, "projects": {"<project>": "<owner>"}, "grandfathered": ["<project>"]}
+the CLI persists exactly the documented store schema
+a hand-written documented store loads back
+grandfather records the project owner and exempts the project
 [{"name": "<namespace>", "owner": "<owner>"}]
+list --json prints name and owner entries
+bare dump prints the versioned namespace envelope
+dump entries carry names only, from list_namespaces
+dump --project prints one project detail mapping
 reserved <namespace> for <owner>
 removed <namespace>
 registered <project> for <owner>
@@ -234,6 +251,7 @@ CONFLICT_EXIT = 3
 exit status 3
 corrupt store exits 1
 empty owner exits 1
+check-upload with an empty owner exits 1 even for unreserved projects
 corrupt store message contains error
 empty owner message contains error
 non-string owners or entries in a store exit 1
@@ -251,6 +269,8 @@ verify_offline takes a fixture directory
 verify_offline exits 0 on success
 verify_offline exits nonzero when fixtures are missing
 verify_offline exits nonzero when fixtures are damaged
+verify_offline validates every fixture shape before checking
+a malformed second index fails verification
 grants.json holds {"grants": [{"name": "<name>", "owner": "<owner>"}]}
 grants.json lists at least two name and owner entries
 projects.json holds {"projects": {"<project>": "<owner>"}}

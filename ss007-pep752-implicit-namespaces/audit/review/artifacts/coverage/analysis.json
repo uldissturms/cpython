@@ -2,9 +2,9 @@
   "mode": "diff",
   "threshold": 80.0,
   "overall": {
-    "lines_scope": 514,
-    "lines_covered": 497,
-    "raw_pct": 96.7,
+    "lines_scope": 543,
+    "lines_covered": 519,
+    "raw_pct": 95.6,
     "branches": 0,
     "branches_covered": 0,
     "branch_pct": null
@@ -40,24 +40,31 @@
     },
     {
       "file": "Lib/packagenamespaces/cli.py",
-      "lines_scope": 195,
-      "lines_covered": 190,
-      "raw_pct": 97.4,
+      "lines_scope": 216,
+      "lines_covered": 204,
+      "raw_pct": 94.4,
       "branches": 0,
       "branches_covered": 0,
       "branch_pct": null,
       "uncovered_lines": [
-        263,
-        264,
-        265,
-        266,
-        268
+        97,
+        100,
+        112,
+        117,
+        124,
+        125,
+        131,
+        284,
+        285,
+        286,
+        287,
+        289
       ]
     },
     {
       "file": "Lib/packagenamespaces/grants.py",
-      "lines_scope": 107,
-      "lines_covered": 107,
+      "lines_scope": 115,
+      "lines_covered": 115,
       "raw_pct": 100.0,
       "branches": 0,
       "branches_covered": 0,
@@ -125,5 +132,18 @@
       ]
     }
   ],
-  "unmeasured": []
+  "unmeasured": [
+    {
+      "file": "Python/stdlib_module_names.h",
+      "added_lines": [
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211
+      ]
+    }
+  ]
 }

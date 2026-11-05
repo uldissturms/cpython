@@ -1,0 +1,5 @@
+Need help with a bug or blocked workflow? Run `codimango feedback`.
+Usage: codimango-bench.par bench agentic-full-task-review [OPTIONS]
+Try 'codimango-bench.par bench agentic-full-task-review --help' for help.
+
+Error: No such option: -m

@@ -1223,10 +1223,10 @@ index 0000000..5eba589
 +        return verdicts
 diff --git a/Lib/packagenamespaces/uploads.py b/Lib/packagenamespaces/uploads.py
 new file mode 100644
-index 0000000..ed4f8d0
+index 0000000..b01afd4
 --- /dev/null
 +++ b/Lib/packagenamespaces/uploads.py
-@@ -0,0 +1,97 @@
+@@ -0,0 +1,101 @@
 +"""Upload authorization for reserved namespaces (PEP 752, Uploads).
 +
 +An upload MUST fail with a 409 Conflict status when the project name
@@ -1314,7 +1314,11 @@ index 0000000..ed4f8d0
 +    reserved namespace, the owner holds one of the matching grants, or
 +    the project is grandfathered.  Otherwise raises
 +    :exc:`UploadConflictError`, whose :attr:`status_code` is 409.
++    The *owner* must be a non-empty string; anything else raises
++    :exc:`ValueError` before any grant is consulted.
 +    """
++    if not isinstance(owner, str) or not owner:
++        raise ValueError("owner must be a non-empty string")
 +    normalized = normalize_name(project)
 +    matches = store.matching(normalized)
 +    if not matches:
@@ -1401,10 +1405,10 @@ index 0000000..d5ae0d4
 +echo "wrote fixtures to $OUTDIR"
 diff --git a/Tools/packagenamespaces/verify_offline.sh b/Tools/packagenamespaces/verify_offline.sh
 new file mode 100755
-index 0000000..57c4b3f
+index 0000000..28b425b
 --- /dev/null
 +++ b/Tools/packagenamespaces/verify_offline.sh
-@@ -0,0 +1,123 @@
+@@ -0,0 +1,155 @@
 +#!/bin/bash
 +# Re-verify PEP 752 namespace fixtures with no network.
 +#
@@ -1456,10 +1460,42 @@ index 0000000..57c4b3f
 +    with open(os.path.join(fixturedir, name), encoding="utf-8") as handle:
 +        return json.load(handle)
 +
-+grants = load("grants.json")["grants"]
-+projects = load("projects.json")["projects"]
-+grandfathered = load("grandfathered.json")["grandfathered"]
++def shape_fail(message):
++    print(f"verify: FAIL {message}", file=sys.stderr)
++    sys.exit(1)
++
++grants_doc = load("grants.json")
++projects_doc = load("projects.json")
++grandfathered_doc = load("grandfathered.json")
 +second = load("second-index.json")
++
++grants = grants_doc.get("grants") if isinstance(grants_doc, dict) else None
++if not isinstance(grants, list) or any(
++    not isinstance(entry, dict)
++    or not isinstance(entry.get("name"), str)
++    or not isinstance(entry.get("owner"), str)
++    for entry in grants
++):
++    shape_fail("grants.json holds no valid grants list")
++projects = projects_doc.get("projects") if isinstance(projects_doc, dict) else None
++if not isinstance(projects, dict) or any(
++    not isinstance(project, str) or not isinstance(owner, str)
++    for project, owner in projects.items()
++):
++    shape_fail("projects.json holds no valid projects mapping")
++grandfathered = (
++    grandfathered_doc.get("grandfathered")
++    if isinstance(grandfathered_doc, dict)
++    else None
++)
++if not isinstance(grandfathered, list) or any(
++    not isinstance(project, str) for project in grandfathered
++):
++    shape_fail("grandfathered.json holds no valid exemptions list")
++second_grants = second.get("grants") if isinstance(second, dict) else None
++second_projects = second.get("projects") if isinstance(second, dict) else None
++if not isinstance(second_grants, list) or not isinstance(second_projects, dict):
++    shape_fail("second-index.json holds no valid grants/projects shapes")
 +
 +failures = []
 +

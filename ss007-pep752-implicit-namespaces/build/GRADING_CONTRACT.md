@@ -143,6 +143,13 @@ GrantStoreTests (fresh `GrantStore()` per test unless noted):
   with `"foo"`, `"foo-bar"`, `"foo-bar-baz"`, `"foo-qux"` granted,
   `children("foo")==["foo-bar","foo-qux"]`,
   `children("foo-bar")==["foo-bar-baz"]`, `children("foo-bar-baz")==[]`.
+- `test.test_pep752_semantics.GrantStoreTests.test_parent_sparse_chain_is_none`:
+  grant only `"foo"` and `"foo-bar-baz"` (no `"foo-bar"`):
+  `parent("foo-bar-baz")` is None and `parent("foo")` is None (a
+  missing middle grant breaks the link; parents are direct only).
+- `test.test_pep752_semantics.GrantStoreTests.test_children_sparse_chain_skips_gap`:
+  same two grants: `children("foo")==[]` and
+  `children("foo-bar-baz")==[]` (children are direct only).
 - `test.test_pep752_semantics.GrantStoreTests.test_matching_returns_sorted_grants`:
   grants `"acme-widgets"`, `"acme"`, `"other"`;
   `matching("acme-widgets-sprocket")` names are `["acme","acme-widgets"]`;
@@ -162,7 +169,9 @@ imports of `GrantStore`, `CONFLICT_STATUS`, `GrandfatheredRegistry`,
 - `test.test_pep752_uploads.UploadTests.test_stranger_upload_conflicts`:
   `authorize_upload("acme-evil","mallory",store)` raises
   `UploadConflictError` with `status_code==409`,
-  `project=="acme-evil"`, `namespace=="acme"`, `owner=="mallory"`.
+  `project=="acme-evil"`, `namespace=="acme"`, `owner=="mallory"`
+  (`owner` is the attempted uploader from the call, not the grant
+  holder `acme-corp`).
 - `test.test_pep752_uploads.UploadTests.test_conflict_status_constant`:
   `CONFLICT_STATUS==409` and `UploadConflictError.status_code==409`.
 - `test.test_pep752_uploads.UploadTests.test_exact_namespace_project_gated`:
@@ -182,6 +191,10 @@ imports of `GrantStore`, `CONFLICT_STATUS`, `GrandfatheredRegistry`,
   `authorize_upload("acme-other","mallory",store,...)` raises.
 - `test.test_pep752_uploads.UploadTests.test_normalization_applied_before_check`:
   `"Acme.Evil"` by mallory raises, by `"acme-corp"` is True.
+- `test.test_pep752_uploads.UploadTests.test_authorize_upload_rejects_empty_owner`:
+  `"", None, 123` as owner each raise `ValueError`, both for a
+  reserved-prefix project (`"acme-new"`) and for an unreserved one
+  (`"requests"`): owner validation runs before any grant is consulted.
 
 ## test_pep752_metadata — MetadataTests (packagenamespaces.metadata)
 
@@ -196,6 +209,10 @@ builds an index with `"acme"` and `"acme-widgets"` granted to
 - `test.test_pep752_metadata.MetadataTests.test_register_project_validates_owner`:
   `"", None, 123` raise `ValueError`; registering `"acme-new"` to
   `"acme-corp"` reads back; unknown project owner is None.
+- `test.test_pep752_metadata.MetadataTests.test_register_project_records_without_authorization`:
+  with `"acme"` granted to `"acme-corp"`, registering `"acme-squat"`
+  to `"mallory"` succeeds (recording is not an upload gate) and
+  `project_owner("acme-squat")` reads `"mallory"`.
 - `test.test_pep752_metadata.MetadataTests.test_legacy_repository_is_1_4_and_silent`:
   `LEGACY_API_VERSION=="1.4"`; legacy index version `"1.4"`;
   `project_detail("anything-at-all")=={"name":"anything-at-all"}` with
@@ -242,16 +259,21 @@ builds an index with `"acme"` and `"acme-widgets"` granted to
   `"namespace"` nor `"namespaces"`.
 - `test.test_pep752_metadata.MetadataTests.test_html_semantically_stable`:
   `simple_html("demo", [{demo-1.0.tar.gz + demo-1.0-py3-none-any.whl
-  at https://example.com/...}])` carries the same document the reference
-  renderer emits, compared structurally so that whitespace, indentation,
-  attribute order and line-break markup are all free. The page must hold
-  `<!doctype html>` (any case), an `<html>`, `<head>` and `<body>` open
-  tag each, a `<title>` and an `<h1>` both wrapping exactly `Links for
-  demo`, and, in file order, one anchor per file whose `href` equals the
-  file url and whose text equals the filename (match each with
-  `<a\b[^>]*href="..."[^>]*>...</a>`, url and filename regex-escaped).
-  It must hold neither `"namespace"` nor `"namespaces"`, and two renders
-  of equal inputs must be byte-equal (deterministic).
+  at https://example.com/...}])` renders a full HTML document, compared
+  structurally so that whitespace, indentation, attribute order,
+  line-break markup and the title/heading wording are all free. The page
+  must hold `<!doctype html>` (any case), an `<html>`, `<head>` and
+  `<body>` open tag each, and a `<title>` and an `<h1>` that EACH
+  CONTAIN the project name `demo` (extract each element's text with
+  `<title\b[^>]*>([\s\S]*?)</title\s*>` and the same shape for `h1`,
+  then assert `demo` is a substring; the reference `Links for demo`
+  passes, and so does any other wording that names the project). In
+  file order, one anchor per file whose `href` equals the file url and
+  whose text equals the filename (match each with
+  `<a\b[^>]*href="..."[^>]*>...</a>`, url and filename regex-escaped;
+  exactly two anchors, no third `<a\b`). It must hold neither
+  `"namespace"` nor `"namespaces"`, and two renders of equal inputs
+  must be byte-equal (deterministic).
 - `test.test_pep752_metadata.MetadataTests.test_html_escapes_special_characters`:
   filename `a<b>&"c.tar.gz` renders escaped, url query `&` renders
   `&amp;`, and no literal `<b>` survives.
@@ -348,7 +370,9 @@ the `Tools/packagenamespaces/` scripts. `DocsTests` reads doc files.
   `OK acme-legacy`.
 - `test.test_pep752_tooling.CliTests.test_cli_dump`: after
   `reserve acme --owner acme-corp`, `dump` parses to
-  `{"api_version":"1.5","namespaces":[{"name":"acme"}]}`.
+  `{"api_version":"1.5","namespaces":[{"name":"acme"}]}` (bare `dump`
+  prints the versioned envelope; `list --json` prints the
+  name-and-owner entries instead).
 - `test.test_pep752_tooling.CliTests.test_cli_dump_project`: after
   `reserve acme --owner acme-corp` and
   `register acme-new --owner acme-corp`,
@@ -363,6 +387,25 @@ the `Tools/packagenamespaces/` scripts. `DocsTests` reads doc files.
   `{"grandfathered": [123]}`, `{"grants": {"bad name!": "acme-corp"}}`.
 - `test.test_pep752_tooling.CliTests.test_cli_register_rejects_empty_owner`:
   `register acme-new --owner ""` exits 1 with `error` on stderr.
+- `test.test_pep752_tooling.CliTests.test_cli_persists_documented_store_schema`:
+  after `reserve acme --owner acme-corp`,
+  `register acme-new --owner acme-corp` and
+  `grandfather acme-legacy --owner mallory`, the store file parses to
+  exactly `{"grants": {"acme": "acme-corp"}, "projects":
+  {"acme-new": "acme-corp", "acme-legacy": "mallory"},
+  "grandfathered": ["acme-legacy"]}` -- the documented keys only, no
+  envelope, no extra keys. (Grandfathering records the project's owner
+  as well as exempting it.)
+- `test.test_pep752_tooling.CliTests.test_cli_loads_documented_store_schema`:
+  write that same documented document by hand; `list` then prints
+  `acme acme-corp`, `check-upload acme-new --owner mallory` exits 3,
+  and `check-upload acme-legacy --owner mallory` exits 0 printing
+  `OK acme-legacy`.
+- `test.test_pep752_tooling.CliTests.test_cli_check_upload_rejects_empty_owner`:
+  `check-upload unreserved --owner ""` on an empty store exits 1 with
+  `error` on stderr, and so does
+  `check-upload acme-new --owner ""` after `reserve acme --owner
+  acme-corp`: empty owners are rejected even where no grant applies.
 - `test.test_pep752_tooling.CliTests.test_cli_module_entrypoint`:
   `sys.executable -m packagenamespaces --help` exits 0 with
   `usage` on stdout (no package import in this test).
@@ -383,15 +426,27 @@ the `Tools/packagenamespaces/` scripts. `DocsTests` reads doc files.
   is absent from its stdout.
 - `test.test_pep752_tooling.HarnessTests.test_verify_offline_rejects_damaged_fixtures`:
   fails unless both scripts exist; generates fixtures, then corrupts
-  them two ways -- `grants.json` replaced by `{not valid json`, and
-  `projects.json` replaced by `{}` -- and each corrupted tree makes
-  `verify_offline.sh` exit nonzero with `verify: all checks passed`
-  absent from its stdout.
+  them three ways -- `grants.json` replaced by `{not valid json`,
+  `projects.json` replaced by `{}`, and `second-index.json` replaced
+  by `{"grants": "acme", "projects": {"x": "y"}}` (grants no longer
+  an array) -- and each corrupted tree makes `verify_offline.sh` exit
+  nonzero with `verify: all checks passed` absent from its stdout.
+- `test.test_pep752_tooling.HarnessTests.test_scripts_use_no_network`:
+  neither `gen_fixtures.sh` nor `verify_offline.sh` names a network
+  primitive: the words `curl`, `wget`, `ssh`, `scp`, `sftp`, `ftp`,
+  `lftp`, `telnet`, `nc`, `ncat`, `socat`, `urllib`, `http.client`,
+  `httpx` (each matched with word boundaries) appear in neither file.
+  Fixture URL strings such as `https://...` are allowed, and bare
+  `requests`/`socket` words are NOT matched (fixture project names
+  would false positive); only the network commands and client
+  libraries above are forbidden.
 - `test.test_pep752_tooling.DocsTests.test_library_page_documents_module`:
   `Doc/library/packagenamespaces.rst` exists and contains
   `packagenamespaces`, `namespaces`, `SecurityPolicy`,
   `RepositoryIndex`, and either the literal `PEP 752` or the
   documentation role `:pep:` together with `752`.
+- `test.test_pep752_tooling.DocsTests.test_distribution_lists_new_page`:
+  `Doc/library/distribution.rst` contains `packagenamespaces`.
 - `test.test_pep752_tooling.DocsTests.test_install_registers_package`:
   `Makefile.pre.in` names `packagenamespaces` between the `LIBSUBDIRS`
   and `TESTSUBDIRS` assignments, and

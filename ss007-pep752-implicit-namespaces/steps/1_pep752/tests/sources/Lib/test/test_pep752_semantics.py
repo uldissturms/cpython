@@ -259,10 +259,26 @@ class GrantStoreTests(_ImplementationTests):
         self.assertEqual(store.children("foo-bar"), ["foo-bar-baz"])
         self.assertEqual(store.children("foo-bar-baz"), [])
 
+    def test_children_sparse_chain_skips_gap(self):
+        self.require_impl()
+        store = GrantStore()
+        for name in ("foo", "foo-bar-baz"):
+            store.reserve(name, "owner-a")
+        self.assertEqual(store.children("foo"), [])
+        self.assertEqual(store.children("foo-bar-baz"), [])
+
     def test_parent_without_grant_is_none(self):
         self.require_impl()
         store = GrantStore()
         store.reserve("foo-bar-baz", "owner-a")
+        self.assertIsNone(store.parent("foo-bar-baz"))
+        self.assertIsNone(store.parent("foo"))
+
+    def test_parent_sparse_chain_is_none(self):
+        self.require_impl()
+        store = GrantStore()
+        for name in ("foo", "foo-bar-baz"):
+            store.reserve(name, "owner-a")
         self.assertIsNone(store.parent("foo-bar-baz"))
         self.assertIsNone(store.parent("foo"))
 
