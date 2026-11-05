@@ -23,10 +23,124 @@ if [ ! -f "$CONFIG" ]; then
     exit 0
 fi
 
+GATE=1
+
+# 0. Tree integrity gate, FIRST -- before anything agent-owned executes.
+# The artifact set stages the whole Lib/Tools/Python trees (the two
+# package dirs share a basename, so the set cannot name them directly),
+# which means a submission's modifications to the test framework, the
+# stdlib, or planted files travel with it. This gate closes that
+# boundary: every file outside the feature surface must be byte-identical
+# to the base tree (hashes pinned in the verifier-owned manifest, which
+# the agent's container never sees), and unexpected files are scrubbed
+# rather than graded. Bytecode caches are deleted outright -- a crafted
+# .pyc could otherwise shadow a verified source. Any mismatch fails
+# closed: the suite never runs on a tampered tree and the reward stays 0.
+if ! "$PY" -I -S - "$TESTS_DIR/tree_manifest.json" "$REPO" \
+    2>"$LOG_DIR/integrity.err" <<'PY'; then
+import hashlib
+import json
+import os
+import shutil
+import sys
+
+manifest_path, repo = sys.argv[1], sys.argv[2]
+try:
+    manifest = json.load(open(manifest_path, encoding="utf-8"))
+except Exception as exc:
+    print(f"integrity: cannot read manifest: {exc}", file=sys.stderr)
+    sys.exit(1)
+expected = manifest.get("files") or {}
+allow = tuple(manifest.get("allow") or ())
+gate_dirs = manifest.get("gate_dirs") or ()
+
+
+def allowed(rel):
+    return rel in allow or any(
+        rel.startswith(prefix) for prefix in allow
+        if prefix.endswith("/"))
+
+
+def sha256_of(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+# Bytecode caches first: a crafted .pyc must never shadow a source the
+# gate is about to verify.
+for gate in gate_dirs:
+    for dirpath, dirnames, filenames in os.walk(
+            os.path.join(repo, gate)):
+        for name in [d for d in dirnames if d == "__pycache__"]:
+            shutil.rmtree(os.path.join(dirpath, name), ignore_errors=True)
+        for name in filenames:
+            if name.endswith((".pyc", ".pyo")):
+                try:
+                    os.remove(os.path.join(dirpath, name))
+                except OSError:
+                    pass
+
+seen = set()
+scrubbed = 0
+for gate in gate_dirs:
+    top = os.path.join(repo, gate)
+    for dirpath, dirnames, filenames in os.walk(top):
+        dirnames.sort()
+        for name in sorted(filenames):
+            path = os.path.join(dirpath, name)
+            rel = os.path.relpath(path, repo)
+            if allowed(rel):
+                continue
+            if rel not in expected:
+                # Unexpected file the base tree never had: planted, not
+                # graded. Removed (the feature surface is allowlisted
+                # above, so nothing legitimate is lost).
+                try:
+                    os.remove(path)
+                    scrubbed += 1
+                except OSError as exc:
+                    print(f"integrity: cannot scrub {rel}: {exc}",
+                          file=sys.stderr)
+                    sys.exit(1)
+                continue
+            seen.add(rel)
+            if os.path.islink(path) or not os.path.isfile(path):
+                print(f"integrity: {rel} is not a regular file",
+                      file=sys.stderr)
+                sys.exit(1)
+            if sha256_of(path) != expected[rel]:
+                print(f"integrity: {rel} differs from the base tree",
+                      file=sys.stderr)
+                sys.exit(1)
+missing = sorted(set(expected) - seen)
+if missing:
+    print(f"integrity: {len(missing)} base file(s) missing, "
+          f"e.g. {missing[0]}", file=sys.stderr)
+    sys.exit(1)
+print(f"integrity: {len(seen)} files verified, {scrubbed} scrubbed",
+      file=sys.stderr)
+PY
+    echo "test.sh: tree integrity gate failed; see integrity.err" >&2
+    GATE=0
+fi
+
 # 1. Install the graded tests idempotently (MSL may also apply test_patch;
-#    applying twice must not fail the run).
-"$PY" -I -S - "$CONFIG" "$REPO" <<'PY' 2>"$LOG_DIR/testpatch.err" || true
-import json, subprocess, sys
+#    applying twice must not fail the run). Already-applied is detected by
+#    CONTENT -- the patch must reverse-apply cleanly -- never by the mere
+#    existence of a sentinel file, which a planted fake would satisfy.
+#    Otherwise any planted files at the patch's new-file paths are removed
+#    and the genuine patch is applied fresh; a patch that still does not
+#    apply fails closed.
+INSTALL_OK=0
+if [ "$GATE" = 1 ]; then
+if "$PY" -I -S - "$CONFIG" "$REPO" <<'PY' 2>"$LOG_DIR/testpatch.err"
+import json
+import os
+import subprocess
+import sys
 
 config_path, repo = sys.argv[1], sys.argv[2]
 try:
@@ -38,26 +152,62 @@ patch = cfg.get("test_patch") or ""
 if not patch.strip():
     print("test_patch: empty, nothing to install", file=sys.stderr)
     sys.exit(0)
-proc = subprocess.run(
-    ["git", "apply", "--check", "--verbose", "-"],
-    input=patch.encode(), cwd=repo,
-    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-if proc.returncode == 0:
-    proc = subprocess.run(
-        ["git", "apply", "--verbose", "-"],
+
+
+def run_git(args):
+    return subprocess.run(
+        ["git", *args, "-"],
         input=patch.encode(), cwd=repo,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    sys.stdout.write(proc.stdout.decode("utf-8", "replace"))
-    sys.exit(proc.returncode)
-sentinel = "Lib/test/test_pep752_naming.py"
-import os
-if os.path.exists(os.path.join(repo, sentinel)):
-    print("test_patch: already applied (sentinel present)", file=sys.stderr)
-    sys.exit(0)
-print("test_patch: does not apply and sentinel is missing", file=sys.stderr)
-sys.exit(1)
-PY
 
+
+def scrub_new_files():
+    # Remove planted files at exactly the new-file paths this patch
+    # creates (a `--- /dev/null` line followed by its `+++ b/...`
+    # line), so a fake test file can neither satisfy the install nor
+    # shadow the genuine one. Modified-file entries are never touched.
+    lines = patch.splitlines()
+    removed = 0
+    for i, line in enumerate(lines):
+        if line == "--- /dev/null" and i + 1 < len(lines):
+            nxt = lines[i + 1]
+            if nxt.startswith("+++ b/"):
+                target = os.path.join(repo, nxt[len("+++ b/"):])
+                try:
+                    if os.path.islink(target) or os.path.isfile(target):
+                        os.remove(target)
+                        removed += 1
+                except OSError as exc:
+                    print(f"test_patch: cannot scrub {target}: {exc}",
+                          file=sys.stderr)
+    return removed
+
+
+proc = run_git(["apply", "--check", "--reverse", "--verbose"])
+if proc.returncode == 0:
+    print("test_patch: already applied (reverse-applies cleanly)",
+          file=sys.stderr)
+    sys.exit(0)
+scrubbed = scrub_new_files()
+if scrubbed:
+    print(f"test_patch: scrubbed {scrubbed} planted file(s)",
+          file=sys.stderr)
+proc = run_git(["apply", "--verbose"])
+sys.stdout.write(proc.stdout.decode("utf-8", "replace"))
+if proc.returncode != 0:
+    print("test_patch: does not apply after scrubbing", file=sys.stderr)
+sys.exit(proc.returncode)
+PY
+then
+    INSTALL_OK=1
+fi
+fi
+if [ "$INSTALL_OK" != 1 ]; then
+    echo "test.sh: test_patch install failed; grading zero" >&2
+    GATE=0
+fi
+
+if [ "$GATE" = 1 ]; then
 # 2. Run the suite; the runner's exit status is data, not a verdict.
 SELECTED="$("$PY" -I -S - "$CONFIG" <<'PY' 2>/dev/null || true
 import json, sys
@@ -84,15 +234,19 @@ cp -f "${LAMBO_JUNIT_XML:-/tmp/lambo-junit.xml}" "$LOG_DIR/junit.xml" 2>/dev/nul
 # after a genuine failing run (an atexit hook suffices), so a report-only
 # grader scores a forgery. The probe re-checks the specified behaviors and
 # never reads the report; reward needs the probe AND every required suite
-# id. The probe itself splits in two: a child runs the checks in the
-# assured tree interpreter (absolute path, -I -S, neutral cwd, scrubbed
-# environment; run_script.sh relinked it when it was not an ELF binary)
-# from the verifier-owned /tests tree and prints one marked result line,
-# while the parent -- which never imports agent code and itself runs under
-# the verifier-owned $PY, never the tree's binary -- writes the verdict
-# file after the child has exited, so a shutdown hook the child armed
-# cannot rewrite it afterwards. A missing, unreadable, or parent-rejected
-# probe payload fails closed in step 4.
+# id. The probe itself splits in three: a check child runs the checks in
+# the assured tree interpreter (absolute path, -I -S, neutral cwd,
+# scrubbed environment; run_script.sh relinked it when it was not an ELF
+# binary) from the verifier-owned /tests tree and prints one marked
+# result line; an attestation grandchild that never imports agent code
+# prints ground-truth check hashes; while the parent -- which never
+# imports agent code and itself runs under the verifier-owned $PY, never
+# the tree's binary -- demands the child's per-check digests equal the
+# grandchild's (a check swapped for a no-op under a trace hook has
+# different bytecode) and writes the verdict file after both have
+# exited, so a shutdown hook the child armed cannot rewrite it
+# afterwards. A missing, unreadable, or parent-rejected probe payload
+# fails closed in step 4.
 rm -f "$LOG_DIR/probe.json"
 (cd / && env -u PYTHONPATH PYTHONSAFEPATH=1 "$PY" -I -S \
     "$TESTS_DIR/probe.py" "$REPO" "$LOG_DIR/probe.json" \
@@ -104,10 +258,13 @@ rm -f "$LOG_DIR/probe.json"
 "$PY" -I -S "$TESTS_DIR/parser.py" \
     "$LOG_DIR/test-stdout.txt" "$LOG_DIR/test-stderr.txt" \
     "$LOG_DIR/output.json" 2>"$LOG_DIR/parser.err" || true
+fi
 
 # 4. Reward 1 iff every required id is present with status PASSED AND the
 # independent probe passed. Either channel alone is insufficient: a forged
 # JUnit report fails the probe, and a suite failure fails the id check.
+# A tripped integrity gate or a failed test install skips straight here
+# with no verdicts, which grades 0.
 "$PY" -I -S - "$CONFIG" "$LOG_DIR" <<'PY' 2>"$LOG_DIR/reward.err" || true
 import json, os, sys
 

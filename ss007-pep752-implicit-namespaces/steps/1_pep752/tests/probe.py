@@ -19,21 +19,34 @@ re-checks the specified behaviors directly -- including negative cases --
 and NEVER reads the JUnit report. The reward requires this probe AND every
 required suite id, so a forged report alone can no longer score.
 
-WHY TWO PROCESSES
+WHY THREE PROCESSES
 
 An earlier single-process probe imported the submitted package in the same
 process that wrote its verdict file, so a shutdown hook inside the package
 could overwrite the genuine payload afterwards and the reward accepted the
-forgery. This probe therefore splits in two: the CHILD runs in a fresh
+forgery. Splitting off a verdict-writing parent closed that route but not
+the next one: the child still imports agent code to run the checks, and
+that code can patch the test framework (``unittest.TestCase.run``) or arm
+a ``sys.settrace`` hook that swaps the check functions for no-ops, forging
+a passing payload the parent would then faithfully write. A parent that
+merely writes what the child computed authenticates nothing.
+
+This probe therefore splits in three. The CHECK CHILD runs in a fresh
 locked-down interpreter (absolute repo path, ``-I -S``, neutral cwd,
 scrubbed environment, script from the verifier-owned ``/tests`` tree),
-imports only the implementation under test, and prints its verdict as one
-marked line on stdout; the PARENT never imports agent-controlled code --
-it spawns the child, demands exactly one well-formed result line on a zero
-exit, and only then writes the verdict file, after the child (and any hook
-it armed) is dead. Anything the child writes to the verdict path is moot:
-the parent overwrites it last. Every anomaly -- crash, timeout, missing or
-doubled result line, malformed payload -- fails closed.
+imports the implementation under test, runs every check, and prints its
+verdict as one marked line on stdout. The ATTEST GRANDCHILD runs the same
+locked-down way but NEVER imports agent code: it only hashes the check
+functions' bytecode, giving the parent ground truth no submission can
+influence. The PARENT never imports agent-controlled code -- it spawns
+both, demands exactly one well-formed result line on a zero exit from
+each, requires the child's per-check code hashes to equal the
+grandchild's (a swapped check has different bytecode, however its
+filename was faked), and only then writes the verdict file, after both
+(and any hook the child armed) are dead. Anything the child writes to
+the verdict path is moot: the parent overwrites it last. Every anomaly
+-- crash, timeout, missing or doubled result line, malformed payload,
+attestation mismatch -- fails closed.
 
 The probe pins specified behavior only (the same contract the graded suite
 is authored from), never reference-implementation internals, so any correct
@@ -42,21 +55,28 @@ alternate implementation passes it.
 
 import contextlib
 import glob
-import html
+import hashlib
 import io
 import json
+import marshal
 import os
 import re
 import subprocess
 import sys
 import tempfile
+import types
+import unittest
+from html.parser import HTMLParser
 
 # The child prints its verdict as one line starting with this marker; the
 # parent accepts exactly one such line. Genuine implementation code never
 # prints it; extra copies fail closed.
 MARKER = "LAMBO_PROBE_PAYLOAD "
 
-_CHILD_MODE = len(sys.argv) > 1 and sys.argv[1] == "--child"
+_MODE = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] in (
+    "--child", "--attest") else None
+_CHILD_MODE = _MODE == "--child"
+_ATTEST_MODE = _MODE == "--attest"
 
 if _CHILD_MODE:
     try:
@@ -96,7 +116,7 @@ else:
     _IMPORT_ERROR = None
 
 
-if _CHILD_MODE:
+if _MODE is not None:
     REPO_ROOT = sys.argv[2] if len(sys.argv) > 2 else "/app"
 else:
     REPO_ROOT = sys.argv[1] if len(sys.argv) > 1 else "/app"
@@ -104,10 +124,28 @@ REPO_PYTHON = os.path.join(REPO_ROOT, "python")
 DESTDIR = "/tmp/lambo-destdir"
 
 _FAILURES = []
+_ATTEST_PRE = {}
+_ATTEST_POST = {}
+
+
+def _code_hash(func):
+    """Bytecode digest identifying the running check function."""
+    return hashlib.sha256(func.__code__.co_code).hexdigest()
 
 
 def check(name, func):
-    """Run one check, recording its name on any failure."""
+    """Run one check, recording its name on any failure.
+
+    The check's bytecode is hashed immediately before and after it runs.
+    The parent compares both against the attestation grandchild's ground
+    truth, so a no-op swapped in around the call -- however briefly --
+    fails closed even if the swap is undone before the verdict prints.
+    """
+    try:
+        _ATTEST_PRE[name] = _code_hash(func)
+    except Exception as exc:
+        _FAILURES.append(f"{name}: cannot attest check code: {exc!r}")
+        return
     try:
         func()
     except Exception as exc:
@@ -116,6 +154,11 @@ def check(name, func):
         # An exiting check (argparse SystemExit, a deliberate os._exit
         # dodge) fails that check; the rest still run.
         _FAILURES.append(f"{name}: {type(exc).__name__}({exc})")
+    finally:
+        try:
+            _ATTEST_POST[name] = _code_hash(func)
+        except Exception as exc:
+            _FAILURES.append(f"{name}: cannot re-attest check code: {exc!r}")
 
 
 def need_impl():
@@ -129,6 +172,85 @@ def expect_raises(exc_types, func, *args, **kwargs):
     except exc_types:
         return
     raise AssertionError(f"{func.__name__} did not raise {exc_types}")
+
+
+# ------------------------------------------------------------- integrity
+#
+# These run first and need no implementation: they verify the child process
+# itself has not been tampered with by the submission it imported. A forged
+# suite report (patched ``TestCase.run``) or forged probe payload (check
+# functions swapped for no-ops under a trace hook) fails here, in a process
+# whose own checks are attested by a grandchild that never imports agent
+# code. At base, with nothing imported, they pass.
+
+def integrity_no_trace():
+    # No trace hook may be active: swapping checks for no-ops needs one.
+    trace = sys.gettrace()
+    assert trace is None, f"trace hook active: {trace!r}"
+    # ... and the sampler itself must be the real builtin, reached two
+    # ways, so a Python-level fake cannot report a clean bill of health.
+    assert type(sys.gettrace).__name__ == "builtin_function_or_method"
+    assert sys.modules["sys"].gettrace is sys.gettrace
+
+
+def integrity_checks_intact():
+    # Every running check must be this file's own function: a no-op
+    # swapped in from submission code carries its own filename.
+    here = os.path.realpath(__file__)
+    for name, func in CHECKS:
+        code = func.__code__
+        assert os.path.realpath(code.co_filename) == here, name
+
+
+def _pristine_case_run_code():
+    """Compile TestCase.run from the tree's unittest source on disk."""
+    path = os.path.join(REPO_ROOT, "Lib", "unittest", "case.py")
+    with open(path, "rb") as handle:
+        source = handle.read()
+    module_code = compile(source, path, "exec")
+    for const in module_code.co_consts:
+        if isinstance(const, types.CodeType) and const.co_name == "TestCase":
+            for sub in const.co_consts:
+                if (isinstance(sub, types.CodeType)
+                        and sub.co_name == "run"):
+                    return sub
+    raise AssertionError("TestCase.run not found in unittest source")
+
+
+def integrity_unittest_run_pristine():
+    # TestCase.run must be the stdlib's own function, not a submission
+    # patch that reports success without running tests. Code identity,
+    # not behavior, so a patch that sniffs its caller cannot hide: any
+    # replacement has different bytecode.
+    run = unittest.TestCase.run
+    assert type(run) is types.FunctionType, type(run)
+    assert marshal.dumps(run.__code__) == marshal.dumps(
+        _pristine_case_run_code())
+
+
+def integrity_unittest_run_truthful():
+    # Behavior, to say what the identity check means: a failing test
+    # fails, a passing test passes, and the test body really executes.
+    seen = []
+
+    class _InnerAlpha(unittest.TestCase):
+        def runTest(self):
+            seen.append("alpha")
+            self.fail("inner failure must be reported")
+
+    class _InnerBeta(unittest.TestCase):
+        def runTest(self):
+            seen.append("beta")
+
+    failing = unittest.TestResult()
+    _InnerAlpha().run(failing)
+    assert seen == ["alpha"], seen
+    assert failing.wasSuccessful() is False
+    assert len(failing.failures) == 1
+    passing = unittest.TestResult()
+    _InnerBeta().run(passing)
+    assert seen == ["alpha", "beta"], seen
+    assert passing.wasSuccessful() is True
 
 
 # ---------------------------------------------------------------- naming
@@ -324,14 +446,23 @@ def grants_root_exports():
     # are named in the spec and must resolve from the root (a tree that
     # drops them still passes every other channel, so this check pins
     # them). The import is local so a missing export fails this check,
-    # not the whole child.
+    # not the whole child. Re-export means identity with the defining
+    # submodule's object. `__all__` itself is NOT specified: when absent
+    # nothing is pinned, and when present any equivalent spelling -- list
+    # or tuple -- passes as long as every entry resolves from the root.
     need_impl()
     import packagenamespaces
     from packagenamespaces import Grant, GrantError
+    from packagenamespaces import grants as grants_module
     assert issubclass(GrantError, Exception)
-    assert isinstance(packagenamespaces.__all__, list)
-    for name in packagenamespaces.__all__:
-        assert hasattr(packagenamespaces, name), name
+    assert packagenamespaces.Grant is grants_module.Grant
+    assert packagenamespaces.GrantError is grants_module.GrantError
+    declared = getattr(packagenamespaces, "__all__", None)
+    if declared is not None:
+        assert isinstance(declared, (list, tuple)), type(declared)
+        for name in declared:
+            assert isinstance(name, str), name
+            assert hasattr(packagenamespaces, name), name
 
 
 # ---------------------------------------------------------------- uploads
@@ -490,6 +621,42 @@ def metadata_namespace_endpoints():
     expect_raises(NotSupportedError, legacy.namespace_detail, "acme")
 
 
+class _AnchorCollector(HTMLParser):
+    """Collect anchors as (href, text) with entities resolved.
+
+    Tag and attribute names compare case-insensitively and attribute
+    formatting (quote style, spacing around `=`, extra attributes) is
+    free: any page a real parser reads the same way passes.
+    """
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.anchors = []
+        self._current = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() == "a":
+            lowered = {name.lower(): value for name, value in attrs}
+            self._current = (lowered.get("href"), [])
+
+    def handle_data(self, data):
+        if self._current is not None:
+            self._current[1].append(data)
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "a" and self._current is not None:
+            href, chunks = self._current
+            self.anchors.append((href, "".join(chunks)))
+            self._current = None
+
+
+def _collect_anchors(page):
+    collector = _AnchorCollector()
+    collector.feed(page)
+    collector.close()
+    return collector.anchors
+
+
 def metadata_html():
     need_impl()
     index = RepositoryIndex()
@@ -510,23 +677,20 @@ def metadata_html():
         match = re.search(rf"(?i)<{tag}\b[^>]*>([\s\S]*?)</{tag}\s*>", page)
         assert match, tag
         assert "demo" in match.group(1), tag
-    # Quote-tolerant: single- and double-quoted href spellings both pass.
-    anchors = re.findall(
-        r'<a\b[^>]*href=(["\'])(.*?)\1[^>]*>(.*?)</a>', page)
-    assert [(url, text) for _, url, text in anchors] == [
+    # One anchor per file, in order; spelling of the markup is free.
+    assert _collect_anchors(page) == [
         (entry["url"], entry["filename"]) for entry in files]
     tricky = index.simple_html("demo", [{
         "filename": 'a<b>&"c.tar.gz',
         "url": "https://example.com/a?first=1&second=2",
     }])
     # Escaping without pinning the entity spelling: the anchor
-    # round-trips through html.unescape while the raw bytes never appear.
-    found = re.findall(
-        r'<a\b[^>]*href=(["\'])(.*?)\1[^>]*>(.*?)</a>', tricky)
+    # round-trips through the parser while the raw bytes never appear.
+    found = _collect_anchors(tricky)
     assert len(found) == 1
-    _, href, text = found[0]
-    assert html.unescape(href) == "https://example.com/a?first=1&second=2"
-    assert html.unescape(text) == 'a<b>&"c.tar.gz'
+    href, text = found[0]
+    assert href == "https://example.com/a?first=1&second=2"
+    assert text == 'a<b>&"c.tar.gz'
     assert 'a<b>&"c.tar.gz' not in tricky
     assert "<b>" not in tricky
 
@@ -750,6 +914,23 @@ def cli_failures():
             assert "error" in err.lower(), raw
 
 
+def cli_root_reexports_build_parser():
+    # The package root re-exports build_parser: it resolves from the
+    # root, is the CLI submodule's own object, builds an argument
+    # parser, and parses a documented command without exiting. The
+    # import is local so a missing export fails this check, not the
+    # whole child. Parsed destinations are NOT pinned.
+    need_impl()
+    import argparse
+    from packagenamespaces import build_parser
+    from packagenamespaces import cli as cli_module
+    assert callable(build_parser)
+    assert build_parser is cli_module.build_parser
+    parser = build_parser()
+    assert isinstance(parser, argparse.ArgumentParser), type(parser)
+    parser.parse_args(["reserve", "acme", "--owner", "acme-corp"])
+
+
 # ---------------------------------------------------------------- harness
 
 def _tools_path(script):
@@ -940,6 +1121,10 @@ def install_tree_and_membership():
 
 
 CHECKS = [
+    ("integrity.no_trace", integrity_no_trace),
+    ("integrity.checks_intact", integrity_checks_intact),
+    ("integrity.unittest_run_pristine", integrity_unittest_run_pristine),
+    ("integrity.unittest_run_truthful", integrity_unittest_run_truthful),
     ("naming.folds", naming_folds_and_lowercases),
     ("naming.runs", naming_collapses_separator_runs),
     ("naming.nonstring", naming_rejects_non_string),
@@ -975,12 +1160,32 @@ CHECKS = [
     ("cli.dump", cli_dump_shapes),
     ("cli.schema", cli_persisted_schema_roundtrip),
     ("cli.failures", cli_failures),
+    ("cli.root_exports", cli_root_reexports_build_parser),
     ("harness.fixtures", harness_gen_and_verify),
     ("harness.damaged", harness_verify_rejects_bad_fixtures),
     ("harness.offline", harness_scripts_use_no_network),
     ("docs.pages", docs_pages),
     ("install.staged", install_tree_and_membership),
 ]
+
+
+def _attest_hashes():
+    """Bytecode digests of the running check functions, in roster order."""
+    return {name: _code_hash(func) for name, func in CHECKS}
+
+
+def _attest_main(argv):
+    """Print ground-truth check hashes; this mode imports no agent code."""
+    if len(argv) != 3:
+        sys.stderr.write("usage: probe.py --attest <repo-root>\n")
+        return 2
+    payload = {
+        "names": [name for name, _ in CHECKS],
+        "hashes": _attest_hashes(),
+    }
+    sys.stdout.write(MARKER + json.dumps(payload, sort_keys=True) + "\n")
+    sys.stdout.flush()
+    return 0
 
 
 def _child_main(argv):
@@ -994,6 +1199,7 @@ def _child_main(argv):
         "passed": not _FAILURES,
         "failed": sorted(_FAILURES),
         "checks": len(CHECKS),
+        "attest": {"pre": dict(_ATTEST_PRE), "post": dict(_ATTEST_POST)},
     }
     sys.stdout.write(MARKER + json.dumps(payload, sort_keys=True) + "\n")
     sys.stdout.flush()
@@ -1013,6 +1219,10 @@ def _parent_main(argv):
     This process never imports agent-controlled code. The verdict file is
     written only here, after the child has exited, so a shutdown hook the
     child armed cannot rewrite it afterwards: anything it wrote is moot.
+    A second spawn -- the attestation grandchild, which never imports
+    agent code either -- supplies ground-truth check hashes the child's
+    per-check digests must equal, so swapped checks fail closed even
+    when the child's own verdict claims they passed.
     """
     if len(argv) != 3:
         sys.stderr.write("usage: probe.py <repo-root> <output-json>\n")
@@ -1032,6 +1242,34 @@ def _parent_main(argv):
         sys.stderr.write(f"probe: FAIL {reason}\n")
         return 0
 
+    def spawn(mode):
+        """Run one locked-down grandchild, return its marked payload."""
+        try:
+            proc = subprocess.run(
+                [child_bin, "-I", "-S",
+                 os.path.abspath(__file__), mode, repo_root],
+                capture_output=True, text=True, cwd="/", timeout=900,
+                stdin=subprocess.DEVNULL, close_fds=True,
+                env={"PATH": "/usr/bin:/bin", "PYTHONSAFEPATH": "1"},
+            )
+        except subprocess.TimeoutExpired:
+            return None, f"probe: {mode} process timed out"
+        except Exception as exc:  # Missing binary, decode failure, ...
+            return None, f"probe: cannot run {mode} process: {exc!r}"
+        if proc.stderr:
+            sys.stderr.write(proc.stderr)
+        if proc.returncode != 0:
+            return None, f"probe: {mode} process exited {proc.returncode}"
+        lines = [line for line in proc.stdout.splitlines()
+                 if line.startswith(MARKER)]
+        if len(lines) != 1:
+            return None, (f"probe: {mode} expected 1 result line, "
+                          f"saw {len(lines)}")
+        try:
+            return json.loads(lines[0][len(MARKER):]), None
+        except ValueError as exc:
+            return None, f"probe: {mode} result line is not JSON: {exc}"
+
     child_bin = os.path.join(repo_root, "python")
     try:
         with open(child_bin, "rb") as handle:
@@ -1044,39 +1282,36 @@ def _parent_main(argv):
     if magic != b"\x7fELF" or not os.access(child_bin, os.X_OK):
         return fail_closed(
             "probe: check interpreter is not a built executable")
-    try:
-        proc = subprocess.run(
-            [child_bin, "-I", "-S",
-             os.path.abspath(__file__), "--child", repo_root],
-            capture_output=True, text=True, cwd="/", timeout=900,
-            stdin=subprocess.DEVNULL, close_fds=True,
-            env={"PATH": "/usr/bin:/bin", "PYTHONSAFEPATH": "1"},
-        )
-    except subprocess.TimeoutExpired:
-        return fail_closed("probe: check process timed out")
-    except Exception as exc:  # Missing binary, decode failure, ...
-        return fail_closed(f"probe: cannot run check process: {exc!r}")
-    if proc.stderr:
-        sys.stderr.write(proc.stderr)
-    if proc.returncode != 0:
-        return fail_closed(
-            f"probe: check process exited {proc.returncode}")
-    lines = [line for line in proc.stdout.splitlines()
-             if line.startswith(MARKER)]
-    if len(lines) != 1:
-        return fail_closed(
-            f"probe: expected 1 result line, saw {len(lines)}")
-    try:
-        payload = json.loads(lines[0][len(MARKER):])
-    except ValueError as exc:
-        return fail_closed(f"probe: result line is not JSON: {exc}")
+    payload, error = spawn("--child")
+    if error is not None:
+        return fail_closed(error)
     if (not isinstance(payload, dict)
             or payload.get("checks") != len(CHECKS)
             or not isinstance(payload.get("passed"), bool)
             or not isinstance(payload.get("failed"), list)
             or not all(isinstance(entry, str)
-                       for entry in payload["failed"])):
+                       for entry in payload["failed"])
+            or not isinstance(payload.get("attest"), dict)):
         return fail_closed("probe: result line has a bad shape")
+    attested, error = spawn("--attest")
+    if error is not None:
+        return fail_closed(error)
+    expected_names = [name for name, _ in CHECKS]
+    if (not isinstance(attested, dict)
+            or attested.get("names") != expected_names
+            or not isinstance(attested.get("hashes"), dict)):
+        return fail_closed("probe: attestation has a bad shape")
+    truth = attested["hashes"]
+    claimed = payload["attest"]
+    for side in ("pre", "post"):
+        digests = claimed.get(side)
+        if not isinstance(digests, dict):
+            return fail_closed(
+                f"probe: attestation {side} has a bad shape")
+        for name in expected_names:
+            if digests.get(name) != truth.get(name):
+                return fail_closed(
+                    f"probe: check code mismatch for {name} ({side})")
     try:
         with open(output_path, "w", encoding="utf-8") as handle:
             json.dump(payload, handle, indent=2, sort_keys=True)
@@ -1097,6 +1332,8 @@ def _parent_main(argv):
 def main(argv):
     if len(argv) > 1 and argv[1] == "--child":
         return _child_main(argv)
+    if len(argv) > 1 and argv[1] == "--attest":
+        return _attest_main(argv)
     return _parent_main(argv)
 
 
@@ -1104,11 +1341,17 @@ if __name__ == "__main__":
     try:
         exit_code = main(sys.argv)
     except BaseException as exc:  # Fail closed, always with a payload.
-        if _CHILD_MODE:
+        if _CHILD_MODE or _ATTEST_MODE:
             try:
+                if _ATTEST_MODE:
+                    failed = {"names": [], "hashes": {}}
+                else:
+                    failed = {"passed": False, "failed": [f"probe: {exc!r}"],
+                              "checks": len(CHECKS),
+                              "attest": {"pre": dict(_ATTEST_PRE),
+                                         "post": dict(_ATTEST_POST)}}
                 sys.stdout.write(MARKER + json.dumps(
-                    {"passed": False, "failed": [f"probe: {exc!r}"],
-                     "checks": len(CHECKS)}, sort_keys=True) + "\n")
+                    failed, sort_keys=True) + "\n")
                 sys.stdout.flush()
             except Exception:
                 pass

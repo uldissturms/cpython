@@ -9,9 +9,9 @@ these class and method names verbatim.
 ## Shared rules for every target (read first)
 
 - Imports use only the standard library (`unittest`, `os`, `sys`,
-  `json`, `subprocess`, `tempfile`, `contextlib`, `io`, `glob`) plus
-  `packagenamespaces`. No `test.support`, no third-party packages, no
-  network.
+  `json`, `subprocess`, `tempfile`, `contextlib`, `io`, `glob`, `re`,
+  `html`, `html.parser`, `argparse`) plus `packagenamespaces`. No
+  `test.support`, no third-party packages, no network.
 - Guarded import (MANDATORY in every file that touches the package): at
   base the package does not exist, so an unguarded import breaks
   collection and every id goes missing instead of failing. Each such
@@ -269,31 +269,39 @@ builds an index with `"acme"` and `"acme-widgets"` granted to
 - `test.test_pep752_metadata.MetadataTests.test_html_semantically_stable`:
   `simple_html("demo", [{demo-1.0.tar.gz + demo-1.0-py3-none-any.whl
   at https://example.com/...}])` renders a full HTML document, compared
-  structurally so that whitespace, indentation, attribute order,
+  structurally so that tag case, whitespace, indentation, attribute
+  order, attribute quote style, spacing around `=`, extra attributes,
   line-break markup and the title/heading wording are all free. The page
   must hold `<!doctype html>` (any case), an `<html>`, `<head>` and
-  `<body>` open tag each, and a `<title>` and an `<h1>` that EACH
-  CONTAIN the project name `demo` (extract each element's text with
+  `<body>` open tag each (matched case-insensitively), and a `<title>`
+  and an `<h1>` that EACH CONTAIN the project name `demo` (extract each
+  element's text with a case-insensitive
   `<title\b[^>]*>([\s\S]*?)</title\s*>` and the same shape for `h1`,
   then assert `demo` is a substring; the reference `Links for demo`
   passes, and so does any other wording that names the project). In
   file order, one anchor per file whose `href` equals the file url and
-  whose text equals the filename (match each with a QUOTE-TOLERANT
-  pattern -- `<a\b[^>]*href=(["'])<url>\1[^>]*><text></a>`, url and
-  filename regex-escaped, the same quote opening and closing the
-  value -- so single- and double-quoted `href` spellings both pass;
-  exactly two anchors, no third `<a\b`). It must hold neither
-  `"namespace"` nor `"namespaces"`, and two renders of equal inputs
-  must be byte-equal (deterministic).
+  whose text equals the filename, compared by PARSING -- never by a
+  lowercase-only anchor regex, which rejects equivalent uppercase
+  renderers. Collect anchors with `html.parser.HTMLParser`
+  (`convert_charrefs=True`): subclass it, on each start tag whose name
+  lowercases to `a` record the `href` attribute (attribute names
+  lowercased) and gather character data until the matching end tag,
+  and assert the collected `(href, text)` pairs in document order
+  equal `[(url, filename)]` for the two files (exactly two anchors --
+  the ordered comparison already rejects a missing or extra one). It
+  must hold neither `"namespace"` nor `"namespaces"`, and two renders
+  of equal inputs must be byte-equal (deterministic).
 - `test.test_pep752_metadata.MetadataTests.test_html_escapes_special_characters`:
   filename `a<b>&"c.tar.gz` with url
   `https://example.com/a?first=1&second=2` renders escaped WITHOUT
-  pinning the entity spelling: extract the one anchor with the same
-  quote-tolerant pattern, `html.unescape` its `href` and text, and
-  compare to the original url and filename; the raw filename never
-  appears literally and no literal `<b>` survives. (The old pin on
-  the exact `&lt;`/`&gt;`/`&amp;`/`&quot;` bytes rejected equivalent
-  numeric-entity renderers.)
+  pinning the tag case, the attribute spelling, or the entity spelling:
+  collect anchors with the same HTMLParser subclass, assert exactly one
+  anchor whose parsed `href` and text equal the original url and
+  filename (the parser resolves the entities, whatever their spelling);
+  the raw filename never appears literally and no literal `<b>`
+  survives. (The old exact-entity pin rejected equivalent
+  numeric-entity renderers, and the old lowercase anchor regex rejected
+  equivalent uppercase renderers.)
 
 ## test_pep752_policy — PolicyTests (packagenamespaces.policy)
 
@@ -426,6 +434,19 @@ the `Tools/packagenamespaces/` scripts. `DocsTests` reads doc files.
 - `test.test_pep752_tooling.CliTests.test_cli_module_entrypoint`:
   `sys.executable -m packagenamespaces --help` exits 0 with
   `usage` on stdout (no package import in this test).
+- `test.test_pep752_tooling.CliTests.test_cli_package_root_reexports_build_parser`:
+  the package root re-exports `build_parser` (guarded import of the
+  name from `packagenamespaces` itself, following the file's existing
+  guarded-import pattern, plus the `packagenamespaces.cli` module for
+  identity): `callable(build_parser)`; it IS the CLI submodule's own
+  object (`packagenamespaces.build_parser is
+  packagenamespaces.cli.build_parser`); calling it with no arguments
+  returns an `argparse.ArgumentParser`; and that parser parses
+  `["reserve", "acme", "--owner", "acme-corp"]` without raising
+  `SystemExit` (a tree that drops the root import fails here although
+  every other test still passes). Parsed destinations are NOT pinned,
+  and `__all__` is NOT consulted (neither its presence nor its
+  spelling is specified).
 - `test.test_pep752_tooling.HarnessTests.test_gen_fixtures_writes_indexes`:
   `bash gen_fixtures.sh <tmp>` exits 0; `grants.json`,
   `projects.json`, `grandfathered.json`, `second-index.json` exist and

@@ -1,4 +1,4 @@
-import html
+from html.parser import HTMLParser
 import re
 import unittest
 
@@ -14,6 +14,34 @@ except Exception as exc:
     _IMPORT_ERROR = exc
 else:
     _IMPORT_ERROR = None
+
+
+class AnchorParser(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.anchors = []
+        self._depth = 0
+        self._href = None
+        self._text = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() == "a":
+            if self._depth == 0:
+                self._href = dict(
+                    (name.lower(), value) for name, value in attrs
+                ).get("href")
+                self._text = []
+            self._depth += 1
+
+    def handle_data(self, data):
+        if self._depth:
+            self._text.append(data)
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "a" and self._depth:
+            self._depth -= 1
+            if self._depth == 0:
+                self.anchors.append((self._href, "".join(self._text)))
 
 
 class MetadataTests(unittest.TestCase):
@@ -205,14 +233,10 @@ class MetadataTests(unittest.TestCase):
                 "url": url,
             }],
         )
-        anchor = re.search(
-            r"""<a\b[^>]*href=(["'])([\s\S]*?)\1[^>]*>([\s\S]*?)</a>""",
-            page,
-        )
-        self.assertIsNotNone(anchor)
-        self.assertEqual(len(re.findall(r"<a\b", page)), 1)
-        self.assertEqual(html.unescape(anchor.group(2)), url)
-        self.assertEqual(html.unescape(anchor.group(3)), filename)
+        parser = AnchorParser()
+        parser.feed(page)
+        parser.close()
+        self.assertEqual(parser.anchors, [(url, filename)])
         self.assertNotIn(filename, page)
         self.assertNotIn("<b>", page)
 
@@ -259,24 +283,13 @@ class MetadataTests(unittest.TestCase):
                 )
                 self.assertIsNotNone(element)
                 self.assertIn("demo", element.group(1))
-        anchors = []
-        for file in files:
-            escaped = {}
-            for key in ("url", "filename"):
-                escaped[key] = "".join(
-                    "\\" + char if char in r"\.^$*+?{}[]|()" else char
-                    for char in file[key]
-                )
-            anchors.append(
-                rf"""<a\b[^>]*href=(["']){escaped["url"]}\1[^>]*>"""
-                rf'{escaped["filename"]}</a>'
-            )
-        position = 0
-        for anchor in anchors:
-            match = re.compile(anchor).search(page, position)
-            self.assertIsNotNone(match)
-            position = match.end()
-        self.assertEqual(len(re.findall(r"<a\b", page)), 2)
+        parser = AnchorParser()
+        parser.feed(page)
+        parser.close()
+        self.assertEqual(
+            parser.anchors,
+            [(file["url"], file["filename"]) for file in files],
+        )
 
 
 if __name__ == "__main__":

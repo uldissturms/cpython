@@ -1,3 +1,4 @@
+import argparse
 import contextlib
 import glob
 import io
@@ -14,6 +15,14 @@ except Exception as exc:
     _IMPORT_ERROR = exc
 else:
     _IMPORT_ERROR = None
+
+try:
+    from packagenamespaces import build_parser
+    import packagenamespaces.cli as cli_module
+except Exception as exc:
+    _PARSER_IMPORT_ERROR = exc
+else:
+    _PARSER_IMPORT_ERROR = None
 
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(
@@ -49,6 +58,16 @@ class CliTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("usage", result.stdout.lower())
+
+    def test_cli_package_root_reexports_build_parser(self):
+        self.require_impl()
+        if _PARSER_IMPORT_ERROR is not None:
+            self.fail(f"Cannot import the package parser: {_PARSER_IMPORT_ERROR!r}")
+        self.assertTrue(callable(build_parser))
+        self.assertIs(build_parser, cli_module.build_parser)
+        parser = build_parser()
+        self.assertIsInstance(parser, argparse.ArgumentParser)
+        parser.parse_args(["reserve", "acme", "--owner", "acme-corp"])
 
     def test_cli_corrupt_store_fails(self):
         self.require_impl()

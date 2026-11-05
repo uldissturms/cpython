@@ -151,5 +151,31 @@ run_control neg probe_forge solve "$TASKDIR/build/neg_controls/probe_forge"
 # verifier-owned interpreter, and the closed artifact set stops the
 # binary crossing to the separate verifier at all.
 run_control neg exec_forge nosolve "$TASKDIR/build/neg_controls/exec_forge"
+# neg: live two-channel forge (package ships ONLY __init__.py: no feature
+# APIs; importing it replaces unittest.TestCase.run with an unconditional
+# success and arms a sys.settrace hook that swaps the probe's CHECKS for
+# no-ops). Scores 1 on the pre-fix harness (both forgeries win), 0 once
+# the probe checks framework integrity and the parent attests the child's
+# check bytecode against a grandchild that never imports agent code.
+run_control neg trace_forge nosolve "$TASKDIR/build/neg_controls/trace_forge"
+# neg: dropped root re-export (golden tree minus the build_parser import
+# and __all__ entry at the package root). Scores 1 on the pre-fix
+# harness, whose suite and probe never check the specified re-export, 0
+# once the cli.root_exports probe check pins it (the suite half rides the
+# next AUTHOR_1P as a new fail_to_pass id).
+run_control neg exports_drop solve "$TASKDIR/build/neg_controls/exports_drop"
+# pos: tuple __all__ (golden tree with the package root's __all__ spelled
+# as a tuple instead of a list). Scores 0 on the pre-fix probe (which
+# pins the list spelling although the spec only requires re-exports)
+# and 1 once grants.exports accepts either spelling.
+run_control pos tuple_all solve "$TASKDIR/build/ref_solutions/pos_tuple_all"
+# pos: uppercase HTML renderer (golden tree with simple_html emitting
+# uppercase tags and spaced HREF attributes). Scores 0 on the pre-fix
+# probe and suite (lowercase-only anchor matching) and 1 once both
+# compare anchors by parsing. The suite half rides the next AUTHOR_1P,
+# so this prints 0 until the metadata re-authoring lands (probe-level
+# 0-pre/1-post is proven separately); like round 7's pending ids, an
+# expected 0, not a failure.
+run_control pos upper_html solve "$TASKDIR/build/ref_solutions/pos_upper_html"
 # twice: one solved container graded twice.
 run_twice "$STEP"

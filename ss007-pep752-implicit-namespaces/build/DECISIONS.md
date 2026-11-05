@@ -4,26 +4,26 @@
 
 Shape: single-turn task in the multi-turn form — exactly one `[[steps]]`
 (`1_pep752`), `format = "swe_bench_multi_turn"`, separate verifier,
-`artifacts = ["/app"]`. Graded in the verifier from `steps/1_pep752/tests/`
-alone (test.sh, run_script.sh, parser.py, config.json, Dockerfile);
-task-level `tests/` mirrors the harness with stub config values.
+closed-set artifacts (`/app/Lib`, `/app/Tools` parents plus the news dir
+and five files -- the two package dirs share a basename so Harbor cannot
+stage them directly; round 12). Graded in the verifier from
+`steps/1_pep752/tests/` alone (test.sh, run_script.sh, parser.py,
+probe.py, config.json, tree_manifest.json, Dockerfile); task-level
+`tests/` mirrors the harness with stub config values.
 
-Contract: 110 `fail_to_pass` (six `Lib/test/test_pep752_*.py` conformance
+Contract: 111 `fail_to_pass` (six `Lib/test/test_pep752_*.py` conformance
 files) + 340 `pass_to_pass` (stable dotted-id subset of test_ensurepip,
 test_venv, test_json, test_htmlparser). Reward 1 iff every required id is
 present with status PASSED AND the independent probe passes (two data
-channels; either alone is insufficient). The 110-list is the verified
-101-list plus the nine round-7 ids from the contract's pinned
-class/method names (authored by AUTHOR_1P next; until then the golden
-tree grades 0 on exactly those nine, with 101/101 old f2p + 340/340 p2p
-+ 39/39 probe checks green -- measured in-container, online and
-`--network=none`). The 101-list was regenerated from a real
-in-container solved parser run after AUTHOR_1P re-authored the suite
-(stale `test_html_byte_stable` out; `test_html_semantically_stable` +
-six new tooling/semantics ids in). test_patch already installs the
-re-authored suite (the parser emits all 101 from the test.sh-installed
-tree), so no repack changed any entry; the config edit was id lists
-only. Evidence: `build/.probe/1_pep752/{base,output}.json`.
+channels; either alone is insufficient). The 111th f2p id
+(`CliTests.test_cli_package_root_reexports_build_parser`, the round-13
+R06 re-export check) landed via AUTHOR_1P round 14 and joined the graded
+list in round 15; the golden tree grades 1 on all 111 with 45/45 probe
+checks green -- measured in-container, online (round 15; `--network=none`
+last measured round 13 on the 110-list). The 111-list is the verified
+101-list plus the nine round-7 ids plus the round-14 id, all from the
+contract's pinned class/method names. test_patch installs the re-authored
+suite (the parser emits all 111 from the test.sh-installed tree).
 
 - New package `Lib/packagenamespaces/` (normalize, matching, grants,
   uploads, metadata, policy, cli, `__main__`), `Tools/packagenamespaces/`
@@ -702,3 +702,98 @@ files, +20 anchors, zero duplicates.
   2026-11-05__00-39-17__e02225), staged, graded, reward 1.0,
   failure_mode NONE, zero ArtifactCaptureError/overlap mentions.
   No test, config, instruction, solution, or harness file touched.
+- Round 13 (REVISION, pre-push beta REVISE, BAD_LEAKAGE, 5 routed
+  findings; R03 and difficulty not routed). R02/R08 (spec-test
+  alignment + alternatives): probe `grants_root_exports` no longer
+  pins the `__all__` spelling -- absent pins nothing, present accepts
+  list or tuple with every entry resolving from the root, and
+  Grant/GrantError must be identical to the grants submodule's
+  objects; probe `metadata_html` compares anchors by PARSING
+  (HTMLParser collector, tag/attribute names case-insensitive,
+  quote style, `=` spacing and extra attributes free) instead of
+  lowercase-only regexes. R06 (build_parser unchecked): new probe
+  check `cli.root_exports` (resolves from the root, identical to
+  `cli.build_parser`, builds an ArgumentParser, parses a documented
+  command; destinations and `__all__` not pinned) plus a new pinned
+  suite id `CliTests.test_cli_package_root_reexports_build_parser`
+  in the tooling contract slice (f2p 110 -> 111 once AUTHOR_1P
+  authors it). R05 (isolation): test.sh runs a tree integrity gate
+  FIRST -- every file under Lib/Tools/Python outside the feature
+  surface must hash-match the verifier-owned `tree_manifest.json`
+  (3219 files, generated from the pristine image, deterministic
+  across runs), bytecode caches are deleted so a crafted .pyc can
+  never shadow a verified source, and unexpected files are scrubbed,
+  not graded; the test_patch install verifies by CONTENT
+  (reverse-apply means MSL already applied it) instead of trusting a
+  sentinel, scrubs planted new-file paths, and fails closed. The
+  artifact set stays the round-12 directories: file-level narrowing
+  was rejected because it breaks legitimate extra-module solutions
+  and risks missing-entry capture failures, while the basename
+  collision still blocks directory narrowing -- the closed set is
+  now enforced IN the verifier by hash rather than at the boundary.
+  R07 (live forge): the probe splits in three -- the check child now
+  reports per-check bytecode digests sampled around every check, an
+  attestation grandchild that never imports agent code supplies
+  ground truth, and the parent fails closed on any mismatch; four
+  new integrity checks run first (no trace hook + real builtin
+  sampler, every check's code filename is the probe's own,
+  TestCase.run code-identity vs freshly compiled tree source,
+  TestCase.run behavioral truthfulness). No suite-side canary was
+  added: a patched `TestCase.run` never executes the canary body, so
+  only the attested probe can catch it. Residual risks recorded:
+  full `_child_main` replacement via a call-event trace, and
+  grader-exfil (single-turn: grading runs after the agent session,
+  so no in-trial feedback; platform-level).
+  Validated in containers of the task image: 1-pre proofs on the
+  HEAD harness (`trace_forge` 1.0 with 40/40 forged probe,
+  `exports_drop` 1.0, `tuple_all` 0.0, `upper_html` 0.0); post-fix
+  full run_controls green (pos 1.0 x3, all 11 negs 0.0, twice
+  1.0,1.0) except `upper_html` at 0.0 as designed -- its probe
+  passes 45/45 post-fix (proven by full grade: probe True while the
+  two HTML suite ids fail on the old lowercase regexes) and the
+  suite half rides the next AUTHOR_1P like round 7's pending ids.
+  Forensics: trace_forge dies on `check code mismatch for
+  integrity.no_trace (pre)`; plants run 110/110 pre-fix but are
+  scrubbed (6 files) with genuine tests failing post-fix; the
+  shipped install scrubber proven in isolation (neutralized-gate
+  run: `scrubbed 6 planted file(s)`, genuine patch applied);
+  oracle 1.0 online AND `--network=none` at 45/45 probe. Preserved
+  green: every previously-green behavior still green; harness
+  mirrors in sync; `probe_forge`'s forged count synced 39 -> 45.
+  Separate-verifier end to end with the new harness: `codimango
+  bench run -p ss007-pep752-implicit-namespaces -a oracle -k 1`
+  (job 2026-11-05__03-27-14__24df65), staged, graded, reward 1.0,
+  failure_mode NONE. Suite re-authoring (metadata anchor parsing,
+  tooling build_parser id) rides the next AUTHOR_1P (3 contract
+  slices changed: shared imports, metadata, tooling; 0 id changes
+  until it lands). Scratch under /tmp/ss007rev/, removed after
+  the run.
+- Round 15 (SURGICAL, id-list round): graded the round-14 AUTHOR_1P
+  id. fail_to_pass listed 110 while the suite holds 111 test methods
+  -- `test.test_pep752_tooling.CliTests.test_cli_package_root_reexports_build_parser`
+  (the round-13 R06 re-export check) graded nothing. Regenerated the
+  FULL fail_to_pass
+  list from a REAL in-container solved parser run (task image rebuilt
+  via taskbuild.sh, layer-identical to the controls image): the
+  parser emits exactly 111 pep752 ids, all PASSED solved, and the new
+  id is the only delta (reverse audit clean: zero stale ids, the old
+  110 equal the solved set minus the new id). Config diff is one
+  added line; every other key byte-identical. Verified with the
+  task's own test.sh in fresh one-shot containers of the task image:
+  solved reward 1.0 (451/451, new id PASSED, probe 45/45 True), base
+  reward 0.0 (340/451, new id FAILED, probe False); pass_to_pass
+  340/340 green in BOTH states. test_patch NOT repacked:
+  pack_test_patch.py --check reports unit 1_pep752 `current`
+  (6 authored, 0 carried, 0 changed) -- the suite bytes already carry
+  the new test and the patch already installs it (proven: both
+  containers applied it cleanly). No suite, instruction, solution,
+  or harness file touched. Measured quirk (pre-existing, fail-closed,
+  same as round 4): at base the parser emits 110 pep752 verdicts
+  (109 FAILED + 1 ERROR, 0 PASSED) because
+  `DocsTests.test_whatsnew_announces_module` fails purely inside
+  subTests with no require_impl guard, leaving a bare nameless
+  testcase the parser skips -- missing grades as not-PASSED, so the
+  base reward stays correct. Second test.sh run in one solved
+  container trips the integrity gate on a rebuilt `Python/sysmodule.o`
+  (run 1's make recompiles after the golden header edit); grading is
+  one-shot per container, so verification used fresh containers.

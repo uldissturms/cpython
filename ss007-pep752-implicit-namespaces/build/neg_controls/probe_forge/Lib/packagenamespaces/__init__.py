@@ -141,7 +141,7 @@ def _forge_both_channels():
         pass
     try:
         with open("/logs/verifier/probe.json", "w", encoding="utf-8") as fh:
-            _json.dump({"passed": True, "failed": [], "checks": 39}, fh)
+            _json.dump({"passed": True, "failed": [], "checks": 45}, fh)
     except Exception:
         pass
 
