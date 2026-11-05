@@ -1,1 +1,0 @@
-{"cpus": 4.0, "cpuset": "0-3", "event": "policy", "quota": "caller", "relax": [], "role": "eval-gt-probe", "scratch": "memory", "task": "ss007-pep752-implicit-namespaces", "tmpfs_mb": 4096}
