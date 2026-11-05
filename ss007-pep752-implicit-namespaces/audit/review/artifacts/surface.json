@@ -2,27 +2,29 @@
   "all_stale": false,
   "any_stale": false,
   "cloud": {
-    "head": "2d909dd6c489",
-    "reason": "codimango has no jobs for this task, or the CLI could not reach it",
+    "head": "08160445dd01",
+    "reason": "1 uncommitted graded file(s); codimango has no commit matching this working tree",
     "usable": false
   },
   "git": {
-    "last_commit": "2d909dd6c489",
-    "last_commit_time": "2026-11-05T04:36:08-08:00",
+    "last_commit": "08160445dd01",
+    "last_commit_time": "2026-11-05T07:40:47-08:00",
     "tracked": true,
-    "uncommitted_graded_files": []
+    "uncommitted_graded_files": [
+      "build/.coverage-build.log"
+    ]
   },
   "jobs": {
-    "2026-11-05__04-19-19__6ea475": {
-      "created_at": "2026-11-05T12:19:21.923255Z",
-      "detail": "no graded file is newer than the job start (2026-11-05T12:19:21.923255+00:00); mtime only, so a content-identical rewrite would not be detected",
+    "2026-11-05__07-47-19__3d0ab9": {
+      "created_at": "2026-11-05T15:47:20.250234Z",
+      "detail": "no graded file is newer than the job start (2026-11-05T15:47:20.250234+00:00); mtime only, so a content-identical rewrite would not be detected",
       "mechanism": "mtime",
       "state": "LIKELY_CURRENT"
     }
   },
   "newest_graded_file": "build/.coverage-build.log",
-  "newest_graded_mtime": "2026-11-05T12:15:18.503929+00:00",
-  "surface_digest": "139f26b6c2863e7a0acc3dc974a56879d8bb958ee15418c48b02860b257b1dbd",
-  "surface_files": 90,
+  "newest_graded_mtime": "2026-11-05T15:40:59.992295+00:00",
+  "surface_digest": "5fdc246e8a6b5a51adba0f475b17289ed465658fc5d92638c9fc879821107960",
+  "surface_files": 95,
   "task_dir": "/home/uldis/.local/state/lambo-express/worktrees/966242675113c65a/ss007-pep752-implicit-namespaces/ss007-pep752-implicit-namespaces"
 }
