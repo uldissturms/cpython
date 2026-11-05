@@ -11,6 +11,20 @@ REPO=/app
 [ -d "$REPO" ] || REPO=/testbed
 JUNIT_XML="${LAMBO_JUNIT_XML:-/tmp/lambo-junit.xml}"
 SYS_PY=/usr/bin/python3
+GRADE_HOME=/tmp/lambo-grade-home
+
+# Unprivileged execution: every command below that touches submitted code
+# (make -- the Makefile is agent-edited -- install, and the suite) runs
+# as nobody, while the verifier-owned readers and verdict paths stay
+# root-owned. Submitted code can read the tree it runs in but never
+# write the grading readers or logs. test.sh owns the setup (setpriv
+# presence, /tests read-only, repo handed to nobody); without setpriv
+# this runner refuses outright, which grades zero tests (fail closed).
+command -v setpriv >/dev/null 2>&1 || exit 1
+as_nobody() {
+    setpriv --reuid=nobody --regid=nogroup --clear-groups \
+        env HOME="$GRADE_HOME" "$@"
+}
 
 # Interpreter assurance, FIRST -- before any make/install/suite step can
 # execute $REPO/python. A submission that replaces the built interpreter
@@ -23,7 +37,7 @@ SYS_PY=/usr/bin/python3
 if ! "$SYS_PY" -c 'import sys; sys.exit(0 if open(sys.argv[1], "rb").read(4) == b"\x7fELF" else 1)' \
     "$REPO/python" 2>/dev/null; then
     rm -f "$REPO/python"
-    make -C "$REPO" -j4 -s python >/dev/null 2>&1 || true
+    as_nobody make -C "$REPO" -j4 -s python >/dev/null 2>&1 || true
 fi
 
 RAW_ARGS="$*"
@@ -67,22 +81,25 @@ if [ -d "$REPO/Lib/packagenamespaces" ]; then
     if [ "$REPO/Python/stdlib_module_names.h" -nt "$REPO/python" ] || \
        [ "$REPO/Makefile.pre.in" -nt "$REPO/Makefile" ] || \
        [ ! -f "$MARKER" ]; then
-        make -C "$REPO" -j4 -s >/dev/null 2>&1 || true
+        as_nobody make -C "$REPO" -j4 -s >/dev/null 2>&1 || true
         if rm -rf "$DESTDIR" && \
-           make -C "$REPO" install DESTDIR="$DESTDIR" >/dev/null 2>&1; then
+           as_nobody make -C "$REPO" install DESTDIR="$DESTDIR" >/dev/null 2>&1; then
             touch "$MARKER"
         fi
     fi
 fi
 
-# Locked-down invocation, all four at once:
+# Locked-down invocation, all five at once:
 #   - neutral cwd (never $REPO: nothing agent-owned shadows an import),
 #   - absolute interpreter path (assured ELF above, relinked if replaced),
 #   - -I (ignore PYTHONPATH/cwd/user site) + -S (no site/sitecustomize),
-#   - PYTHONSAFEPATH + scrubbed PYTHONPATH as belt and braces.
+#   - PYTHONSAFEPATH + scrubbed PYTHONPATH as belt and braces,
+#   - UNPRIVILEGED (setpriv nobody: submitted code in-process cannot
+#     write the verifier-owned readers or verdict paths).
 # The stdlib under test still comes from the build tree via the binary's own
 # prefix resolution, not from the working directory.
 cd / || exit 1
 # shellcheck disable=SC2086
-env -u PYTHONPATH PYTHONSAFEPATH=1 "$REPO/python" -I -S -m test -v \
+as_nobody env -u PYTHONPATH PYTHONSAFEPATH=1 PYTHONDONTWRITEBYTECODE=1 \
+    "$REPO/python" -I -S -m test -v \
     --junit-xml "$JUNIT_XML" $TESTS 2>&1 || true

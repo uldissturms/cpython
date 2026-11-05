@@ -16,6 +16,10 @@ PY=/usr/bin/python3
 mkdir -p "$LOG_DIR"
 printf '0' > "$LOG_DIR/reward.txt"
 printf '{"reward": 0.0}' > "$LOG_DIR/reward.json"
+# Fresh verdict files every grade: a repeat grade in one container must
+# never inherit the previous run's output.json/probe.json, or a tripped
+# gate below would still reward from stale verdicts instead of zero.
+rm -f "$LOG_DIR/output.json" "$LOG_DIR/probe.json"
 
 CONFIG="$TESTS_DIR/config.json"
 if [ ! -f "$CONFIG" ]; then
@@ -92,6 +96,13 @@ for gate in gate_dirs:
         for name in sorted(filenames):
             path = os.path.join(dirpath, name)
             rel = os.path.relpath(path, repo)
+            if rel.endswith(".o"):
+                # Build product: make regenerates these after the
+                # permitted header edit, so they are pinned by no hash
+                # (absent from the manifest) and scrubbed by no rule.
+                # Pinning them broke repeat grading: the first grade's
+                # rebuild invalidated the second grade's gate.
+                continue
             if allowed(rel):
                 continue
             if rel not in expected:
@@ -207,6 +218,38 @@ if [ "$INSTALL_OK" != 1 ]; then
     GATE=0
 fi
 
+# 1.5. Privilege separation, BEFORE anything agent-owned executes. Every
+# step below that touches submitted code -- the make/install in
+# run_script.sh (the Makefile is agent-edited), the suite itself, and
+# the probe's check grandchildren -- runs UNPRIVILEGED as nobody, while
+# the verifier-owned readers stay root-owned and read-only and the
+# verdict paths stay root-owned. Submitted code can read the readers it
+# is graded by but never write them, so neither scoring channel's
+# reader is writable by the code it grades. The repo tree (which the
+# unprivileged make must rebuild and install from) is handed to nobody
+# only after the integrity gate above scrubbed it as root.
+HARNESS_SHA="$LOG_DIR/harness.sha256"
+if [ "$GATE" = 1 ]; then
+    if ! command -v setpriv >/dev/null 2>&1; then
+        echo "test.sh: setpriv missing; cannot drop privileges" >&2
+        GATE=0
+    elif ! (cd "$TESTS_DIR" && sha256sum test.sh run_script.sh parser.py \
+            probe.py config.json tree_manifest.json > "$HARNESS_SHA"); then
+        echo "test.sh: cannot snapshot harness files" >&2
+        GATE=0
+    elif ! chmod -R a-w "$TESTS_DIR"; then
+        echo "test.sh: cannot lock harness files read-only" >&2
+        GATE=0
+    elif ! mkdir -p /tmp/lambo-grade-home \
+            || ! chown nobody:nogroup /tmp/lambo-grade-home; then
+        echo "test.sh: cannot stage the unprivileged home" >&2
+        GATE=0
+    elif ! chown -R nobody:nogroup "$REPO"; then
+        echo "test.sh: cannot hand the repo to the grade user" >&2
+        GATE=0
+    fi
+fi
+
 if [ "$GATE" = 1 ]; then
 # 2. Run the suite; the runner's exit status is data, not a verdict.
 SELECTED="$("$PY" -I -S - "$CONFIG" <<'PY' 2>/dev/null || true
@@ -236,28 +279,42 @@ cp -f "${LAMBO_JUNIT_XML:-/tmp/lambo-junit.xml}" "$LOG_DIR/junit.xml" 2>/dev/nul
 # never reads the report; reward needs the probe AND every required suite
 # id. The probe itself splits in three: a check child runs the checks in
 # the assured tree interpreter (absolute path, -I -S, neutral cwd,
-# scrubbed environment; run_script.sh relinked it when it was not an ELF
-# binary) from the verifier-owned /tests tree and prints one marked
-# result line; an attestation grandchild that never imports agent code
-# prints ground-truth check hashes; while the parent -- which never
-# imports agent code and itself runs under the verifier-owned $PY, never
-# the tree's binary -- demands the child's per-check digests equal the
-# grandchild's (a check swapped for a no-op under a trace hook has
-# different bytecode) and writes the verdict file after both have
-# exited, so a shutdown hook the child armed cannot rewrite it
-# afterwards. A missing, unreadable, or parent-rejected probe payload
-# fails closed in step 4.
+# scrubbed environment, UNPRIVILEGED via setpriv nobody; run_script.sh
+# relinked it when it was not an ELF binary) from the verifier-owned
+# /tests tree and prints one marked result line; an attestation
+# grandchild that never imports agent code prints ground-truth check
+# hashes; while the parent -- which never imports agent code and itself
+# runs under the verifier-owned $PY, never the tree's binary -- demands
+# the child's per-check digests equal the grandchild's (a check swapped
+# for a no-op under a trace hook has different bytecode) and writes the
+# verdict file after both have exited, so a shutdown hook the child
+# armed cannot rewrite it afterwards. A missing, unreadable, or
+# parent-rejected probe payload fails closed in step 4.
 rm -f "$LOG_DIR/probe.json"
 (cd / && env -u PYTHONPATH PYTHONSAFEPATH=1 "$PY" -I -S \
     "$TESTS_DIR/probe.py" "$REPO" "$LOG_DIR/probe.json" \
     2>"$LOG_DIR/probe.err") || true
 
+# 2.6. Reader re-verification: the suite and the probe grandchildren
+# just ran submitted code. The uid boundary above already makes the
+# readers unwritable by it; this snapshot comparison is the second
+# layer, so a drift through any unforeseen path fails closed instead
+# of parsing or rewarding from tampered code. (The verdict files were
+# removed up front, so a trip here grades from no verdicts: zero.)
+if ! (cd "$TESTS_DIR" && sha256sum -c "$HARNESS_SHA" \
+        >/dev/null 2>"$LOG_DIR/harness.err"); then
+    echo "test.sh: harness files drifted during grading; see harness.err" >&2
+    GATE=0
+fi
+
+if [ "$GATE" = 1 ]; then
 # 3. Parse the raw output with the grader's interpreter (never the repo's:
 #    the agent owns that tree).  -I -S drops PYTHONPATH, cwd and site so a
 #    sitecustomize shim cannot silence the parser.
 "$PY" -I -S "$TESTS_DIR/parser.py" \
     "$LOG_DIR/test-stdout.txt" "$LOG_DIR/test-stderr.txt" \
     "$LOG_DIR/output.json" 2>"$LOG_DIR/parser.err" || true
+fi
 fi
 
 # 4. Reward 1 iff every required id is present with status PASSED AND the

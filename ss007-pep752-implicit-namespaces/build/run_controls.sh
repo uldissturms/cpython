@@ -177,5 +177,29 @@ run_control pos tuple_all solve "$TASKDIR/build/ref_solutions/pos_tuple_all"
 # 0-pre/1-post is proven separately); like round 7's pending ids, an
 # expected 0, not a failure.
 run_control pos upper_html solve "$TASKDIR/build/ref_solutions/pos_upper_html"
+# neg: dropped GrandfatheredRegistry re-export (golden tree minus the
+# GrandfatheredRegistry import and __all__ entry at the package root).
+# Scores 1 on the pre-fix harness, whose suite and probe never check the
+# specified re-export (reproduced by the pre-push review), 0 once the
+# grants.exports probe check pins it (the suite half rides the next
+# AUTHOR_1P as an import-from-root revise of the uploads tests; same ids).
+run_control neg exports_drop_grandfathered solve "$TASKDIR/build/neg_controls/exports_drop_grandfathered"
+# neg: grading-reader rewrite (golden tree whose package import overwrites
+# /tests/parser.py and /tests/probe.py with forgeries emitting all-passed
+# verdicts, over a genuinely broken normalize_name). Scores 1 on the
+# pre-fix harness, which executes submitted code as root with /tests
+# writable (reproduces the pre-push review's demonstrated bypass), 0 once
+# submitted code runs unprivileged with /tests read-only and the genuine
+# failures stand.
+run_control neg tests_tamper solve "$TASKDIR/build/neg_controls/tests_tamper"
+# pos: split shell harness (golden tree with gen_fixtures.sh and
+# verify_offline.sh delegating to a sibling _fixtures.py helper). Scores 0
+# on the pre-fix harness, whose suite and probe copy only the two .sh
+# files into a fresh tools tree (reproduces the pre-push review's
+# legitimate-decomposition failure), and 1 once both copy the whole
+# directory. The suite half rides the next AUTHOR_1P, so this prints 0
+# until the tooling re-authoring lands (probe-level 0-pre/1-post is
+# proven separately); like round 7's pending ids, an expected 0.
+run_control pos split_harness solve "$TASKDIR/build/ref_solutions/pos_split_harness"
 # twice: one solved container graded twice.
 run_twice "$STEP"

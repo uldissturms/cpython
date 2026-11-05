@@ -34,19 +34,20 @@ merely writes what the child computed authenticates nothing.
 This probe therefore splits in three. The CHECK CHILD runs in a fresh
 locked-down interpreter (absolute repo path, ``-I -S``, neutral cwd,
 scrubbed environment, script from the verifier-owned ``/tests`` tree),
-imports the implementation under test, runs every check, and prints its
-verdict as one marked line on stdout. The ATTEST GRANDCHILD runs the same
-locked-down way but NEVER imports agent code: it only hashes the check
-functions' bytecode, giving the parent ground truth no submission can
-influence. The PARENT never imports agent-controlled code -- it spawns
-both, demands exactly one well-formed result line on a zero exit from
-each, requires the child's per-check code hashes to equal the
-grandchild's (a swapped check has different bytecode, however its
-filename was faked), and only then writes the verdict file, after both
-(and any hook the child armed) are dead. Anything the child writes to
-the verdict path is moot: the parent overwrites it last. Every anomaly
--- crash, timeout, missing or doubled result line, malformed payload,
-attestation mismatch -- fails closed.
+UNPRIVILEGED (setpriv nobody, so submitted code it imports cannot write
+the verifier-owned readers, verdict paths, or logs), runs every check,
+and prints its verdict as one marked line on stdout. The ATTEST
+GRANDCHILD runs the same locked-down unprivileged way but NEVER imports
+agent code: it only hashes the check functions' bytecode, giving the
+parent ground truth no submission can influence. The PARENT never
+imports agent-controlled code -- it spawns both, demands exactly one
+well-formed result line on a zero exit from each, requires the child's
+per-check code hashes to equal the grandchild's (a swapped check has
+different bytecode, however its filename was faked), and only then
+writes the verdict file, after both (and any hook the child armed) are
+dead. Anything the child writes to the verdict path is moot: the parent
+overwrites it last. Every anomaly -- crash, timeout, missing or doubled
+result line, malformed payload, attestation mismatch -- fails closed.
 
 The probe pins specified behavior only (the same contract the graded suite
 is authored from), never reference-implementation internals, so any correct
@@ -61,6 +62,7 @@ import json
 import marshal
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -442,21 +444,25 @@ def grants_relationships():
 
 
 def grants_root_exports():
-    # The package root re-exports every public symbol: Grant and GrantError
-    # are named in the spec and must resolve from the root (a tree that
-    # drops them still passes every other channel, so this check pins
-    # them). The import is local so a missing export fails this check,
-    # not the whole child. Re-export means identity with the defining
-    # submodule's object. `__all__` itself is NOT specified: when absent
-    # nothing is pinned, and when present any equivalent spelling -- list
-    # or tuple -- passes as long as every entry resolves from the root.
+    # The package root re-exports every public symbol: Grant, GrantError
+    # and GrandfatheredRegistry are named in the spec and must resolve
+    # from the root (a tree that drops one still passes every other
+    # channel, so this check pins them). The import is local so a missing
+    # export fails this check, not the whole child. Re-export means
+    # identity with the defining submodule's object. `__all__` itself is
+    # NOT specified: when absent nothing is pinned, and when present any
+    # equivalent spelling -- list or tuple -- passes as long as every
+    # entry resolves from the root.
     need_impl()
     import packagenamespaces
-    from packagenamespaces import Grant, GrantError
+    from packagenamespaces import Grant, GrantError, GrandfatheredRegistry
     from packagenamespaces import grants as grants_module
+    from packagenamespaces import uploads as uploads_module
     assert issubclass(GrantError, Exception)
     assert packagenamespaces.Grant is grants_module.Grant
     assert packagenamespaces.GrantError is grants_module.GrantError
+    assert (packagenamespaces.GrandfatheredRegistry
+            is uploads_module.GrandfatheredRegistry)
     declared = getattr(packagenamespaces, "__all__", None)
     if declared is not None:
         assert isinstance(declared, (list, tuple)), type(declared)
@@ -1044,18 +1050,24 @@ def harness_scripts_use_no_network():
         assert "verify: all checks passed" in result.stdout
         assert not os.path.exists(log), open(log).read()
         # Copies carrying network-word comments behave identically. The
-        # copies sit in a mirrored Tools/ layout with Lib linked back to
-        # the repo, because the verifier derives its root from its own
-        # path; only the trailing comment differs from the real scripts.
+        # WHOLE Tools/packagenamespaces directory is copied into a
+        # mirrored Tools/ layout with Lib linked back to the repo,
+        # because the scripts derive their root from their own path --
+        # and because the spec never requires the two entrypoints to be
+        # self-contained: sibling helpers they source or import travel
+        # with them, so a legitimate split layout keeps working. Only
+        # the trailing comment on the two entrypoints differs.
+        tools_dir = os.path.join(REPO_ROOT, "Tools", "packagenamespaces")
         mirror = os.path.join(tmp, "mirror", "Tools", "packagenamespaces")
-        os.makedirs(mirror)
+        os.makedirs(os.path.join(tmp, "mirror", "Tools"))
+        shutil.copytree(tools_dir, mirror, copy_function=shutil.copy2)
         os.symlink(os.path.join(REPO_ROOT, "Lib"),
                    os.path.join(tmp, "mirror", "Lib"))
         commented = {}
         for script in ("gen_fixtures.sh", "verify_offline.sh"):
-            with open(_tools_path(script), encoding="utf-8") as handle:
-                content = handle.read()
             copy_path = os.path.join(mirror, script)
+            with open(copy_path, encoding="utf-8") as handle:
+                content = handle.read()
             with open(copy_path, "w", encoding="utf-8") as handle:
                 handle.write(content + comment)
             commented[script] = copy_path
@@ -1243,14 +1255,24 @@ def _parent_main(argv):
         return 0
 
     def spawn(mode):
-        """Run one locked-down grandchild, return its marked payload."""
+        """Run one locked-down grandchild, return its marked payload.
+
+        Both grandchildren run UNPRIVILEGED (setpriv nobody): the child
+        imports submitted code, which must never write the verifier-owned
+        readers, verdict paths, or logs -- all readable here, none
+        writable. A missing setpriv fails closed below.
+        """
         try:
             proc = subprocess.run(
-                [child_bin, "-I", "-S",
+                ["setpriv", "--reuid=nobody", "--regid=nogroup",
+                 "--clear-groups",
+                 child_bin, "-I", "-S",
                  os.path.abspath(__file__), mode, repo_root],
                 capture_output=True, text=True, cwd="/", timeout=900,
                 stdin=subprocess.DEVNULL, close_fds=True,
-                env={"PATH": "/usr/bin:/bin", "PYTHONSAFEPATH": "1"},
+                env={"PATH": "/usr/bin:/bin", "PYTHONSAFEPATH": "1",
+                     "PYTHONDONTWRITEBYTECODE": "1",
+                     "HOME": "/tmp/lambo-grade-home"},
             )
         except subprocess.TimeoutExpired:
             return None, f"probe: {mode} process timed out"

@@ -1,10 +1,9 @@
 import unittest
 
 try:
-    from packagenamespaces import GrantStore
+    from packagenamespaces import GrantStore, GrandfatheredRegistry
     from packagenamespaces.uploads import (
         CONFLICT_STATUS,
-        GrandfatheredRegistry,
         UploadConflictError,
         authorize_upload,
     )

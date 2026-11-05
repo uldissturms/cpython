@@ -392,16 +392,17 @@ class HarnessTests(unittest.TestCase):
 
             mirror = os.path.join(directory, "mirror")
             copied_tools = os.path.join(mirror, "Tools", "packagenamespaces")
-            os.makedirs(copied_tools)
+            os.makedirs(os.path.dirname(copied_tools))
+            result = subprocess.run(
+                ["cp", "-a", os.path.join(REPO_ROOT, "Tools", "packagenamespaces"),
+                 copied_tools],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             os.symlink(os.path.join(REPO_ROOT, "Lib"), os.path.join(mirror, "Lib"))
             for filename in ("gen_fixtures.sh", "verify_offline.sh"):
-                original = os.path.join(REPO_ROOT, "Tools", "packagenamespaces",
-                                        filename)
-                with open(original, encoding="utf-8") as stream:
-                    content = stream.read()
-                with open(os.path.join(copied_tools, filename), "w",
+                with open(os.path.join(copied_tools, filename), "a",
                           encoding="utf-8") as stream:
-                    stream.write(content)
                     stream.write("\n# " + " ".join(commands) + " urllib http.client\n")
 
             for variant in ("original", "comments"):

@@ -1,1 +1,39 @@
-[{"kind": "instruction", "revise": true, "revise_reason": "re-check the kept page against the facts: denied-upload semantics, policy namespaces container, CLI re-exports", "source": "build/INSTRUCTION_FACTS.md", "target": "steps/1_pep752/instruction.md"}, {"kind": "tests", "source": "build/GRADING_CONTRACT.md", "target": "steps/1_pep752/tests/sources/Lib/test/test_pep752_naming.py"}, {"kind": "tests", "source": "build/GRADING_CONTRACT.md", "target": "steps/1_pep752/tests/sources/Lib/test/test_pep752_semantics.py"}, {"kind": "tests", "source": "build/GRADING_CONTRACT.md", "target": "steps/1_pep752/tests/sources/Lib/test/test_pep752_uploads.py"}, {"kind": "tests", "source": "build/GRADING_CONTRACT.md", "target": "steps/1_pep752/tests/sources/Lib/test/test_pep752_metadata.py"}, {"kind": "tests", "source": "build/GRADING_CONTRACT.md", "target": "steps/1_pep752/tests/sources/Lib/test/test_pep752_policy.py"}, {"kind": "tests", "source": "build/GRADING_CONTRACT.md", "target": "steps/1_pep752/tests/sources/Lib/test/test_pep752_tooling.py"}]
+[
+ {
+  "kind": "instruction",
+  "revise": true,
+  "revise_reason": "re-check the kept page against the facts: denied-upload semantics, policy namespaces container, CLI re-exports",
+  "source": "build/INSTRUCTION_FACTS.md",
+  "target": "steps/1_pep752/instruction.md"
+ },
+ {
+  "kind": "tests",
+  "source": "build/GRADING_CONTRACT.md",
+  "target": "steps/1_pep752/tests/sources/Lib/test/test_pep752_naming.py"
+ },
+ {
+  "kind": "tests",
+  "source": "build/GRADING_CONTRACT.md",
+  "target": "steps/1_pep752/tests/sources/Lib/test/test_pep752_semantics.py"
+ },
+ {
+  "kind": "tests",
+  "source": "build/GRADING_CONTRACT.md",
+  "target": "steps/1_pep752/tests/sources/Lib/test/test_pep752_uploads.py"
+ },
+ {
+  "kind": "tests",
+  "source": "build/GRADING_CONTRACT.md",
+  "target": "steps/1_pep752/tests/sources/Lib/test/test_pep752_metadata.py"
+ },
+ {
+  "kind": "tests",
+  "source": "build/GRADING_CONTRACT.md",
+  "target": "steps/1_pep752/tests/sources/Lib/test/test_pep752_policy.py"
+ },
+ {
+  "kind": "tests",
+  "source": "build/GRADING_CONTRACT.md",
+  "target": "steps/1_pep752/tests/sources/Lib/test/test_pep752_tooling.py"
+ }
+]

@@ -19,11 +19,15 @@ channels; either alone is insufficient). The 111th f2p id
 (`CliTests.test_cli_package_root_reexports_build_parser`, the round-13
 R06 re-export check) landed via AUTHOR_1P round 14 and joined the graded
 list in round 15; the golden tree grades 1 on all 111 with 45/45 probe
-checks green -- measured in-container, online (round 15; `--network=none`
-last measured round 13 on the 110-list). The 111-list is the verified
-101-list plus the nine round-7 ids plus the round-14 id, all from the
-contract's pinned class/method names. test_patch installs the re-authored
-suite (the parser emits all 111 from the test.sh-installed tree).
+checks green -- measured in-container, online AND `--network=none`
+(round 16 re-measured both on the hardened harness: 451/451 with the
+suite, make/install and probe grandchildren all unprivileged). The
+111-list is the verified 101-list plus the
+nine round-7 ids plus the round-14 id, all from the contract's pinned
+class/method names. test_patch installs the re-authored suite (the
+parser emits all 111 from the test.sh-installed tree). No id changes
+in round 16: both test revises (tooling whole-dir copy, uploads
+import-from-root) keep every class/method name.
 
 - New package `Lib/packagenamespaces/` (normalize, matching, grants,
   uploads, metadata, policy, cli, `__main__`), `Tools/packagenamespaces/`
@@ -230,13 +234,74 @@ suite (the parser emits all 111 from the test.sh-installed tree).
   pre-fix). Rejected stdout-carried XML (same forgery class) and a
   mktemp+marker path (in-process agent code reads env/argv, so
   obscurity buys nothing over the fixed runner-owned path).
-- Runner is locked down four ways: neutral cwd (`/`, never /app),
+- Runner is locked down five ways: neutral cwd (`/`, never /app),
   absolute interpreter path, `-I -S` (no PYTHONPATH/cwd/user-site,
-  no site/sitecustomize), `PYTHONSAFEPATH=1` + scrubbed PYTHONPATH.
-  The stdlib under test still resolves from the build tree via the
-  binary's prefix (`import test` -> `/app/Lib/test`, verified).
-  Rejected `-S`-only (leaves cwd shadowing) and keeping cwd=/app
-  (leaves `/app/test.py` shadowing `-m test`, proven live).
+  no site/sitecustomize), `PYTHONSAFEPATH=1` + scrubbed PYTHONPATH,
+  and UNPRIVILEGED execution (setpriv nobody; round 16). The stdlib
+  under test still resolves from the build tree via the binary's own
+  prefix (`import test` -> `/app/Lib/test`, verified, nobody-owned
+  tree included). Rejected `-S`-only (leaves cwd shadowing) and
+  keeping cwd=/app (leaves `/app/test.py` shadowing `-m test`,
+  proven live).
+- Privilege separation is the outer boundary (round 16): test.sh runs
+  as root, but EVERYTHING that touches submitted code -- the
+  make/install in run_script.sh (the Makefile is agent-edited), the
+  suite, and the probe's check grandchildren -- runs as nobody, while
+  /tests is root-owned read-only and the verdict paths are
+  root-owned. Neither scoring channel's reader is writable by the
+  code it grades. Setup order matters: integrity gate (root, scrub)
+  -> test_patch install (root, git) -> snapshot /tests hashes ->
+  chmod a-w /tests -> chown repo to nobody -> unprivileged
+  make/suite/probe. After the suite, test.sh re-verifies the /tests
+  snapshot before parsing (second layer; a drift fails closed), and
+  every grade starts by removing output.json/probe.json so a tripped
+  gate can never reward from stale verdicts. Rejected keeping the
+  suite root-owned with hash-pinning alone (bash reads test.sh
+  incrementally, so a root in-process rewrite of test.sh's own tail
+  could survive any self-check; uid separation closes it), and
+  rejected hiding config.json (the installed test sources already
+  name every id, so secrecy buys nothing -- unwritable readers plus
+  the independent probe is the protection).
+- The offline mirror copies the WHOLE `Tools/packagenamespaces/`
+  directory (round 16): the spec never requires the two shell
+  entrypoints to be self-contained, so sibling helpers they source
+  or import travel with them and a legitimate split layout keeps
+  working. Two-file copying rejected a correct decomposition
+  (measured 0 pre-fix on the model's entrypoints-plus-helper tree,
+  reproduced by the pre-push review). Both channels fixed: the probe
+  copies the directory now, and the suite's
+  `test_scripts_use_no_network` does the same via AUTHOR_1P revise
+  (contract section rewritten, same id). Permanent pos control
+  (`split_harness`).
+- The package-root re-export of `GrandfatheredRegistry` is pinned
+  (round 16): the probe's `grants.exports` check asserts identity
+  with the uploads submodule's object, and the uploads tests import
+  the name from the root via AUTHOR_1P revise (same ids -- a dropped
+  root import fails the guarded import and every UploadTests method
+  with it). Deleting the root import plus `__all__` entry scored 1
+  pre-fix (reproduced by the pre-push review); the permanent
+  `exports_drop_grandfathered` neg control scores 0 now. `__all__`
+  spelling still unpinned (list or tuple).
+- The integrity gate pins SOURCES, not build products (round 16):
+  the 97 `Python/*.o` entries left the manifest (3219 -> 3122
+  files) and the gate skips `*.o` (neither verified nor scrubbed --
+  scrubbing would force a full rebuild every grade). Pinning them
+  broke repeat grading (the first grade's post-header rebuild
+  invalidated the second grade's gate; round 15 measured the trip).
+  The `.o` files cannot smuggle anything in: they travel in neither
+  artifact set. The `twice` control now prints 1.0,1.0 with a clean
+  second-run gate. Rejected keeping the hashes (the measured
+  repeat-run failure) and scrubbing build products (rebuild cost,
+  same admission).
+- The golden NEWS entry is blurb-valid (round 16):
+  `2026-11-04-12-00-00.gh-issue-140000.ss007.rst`. The old
+  `pep-752` middle field is unparsable to blurb (`Found unparsable
+  field in 'next' filename: 'pep-752'`, reproduced with blurb's own
+  `load_next`; normal doc builds invoke `blurb merge`). The issue
+  number is a placeholder satisfying blurb's required issue field;
+  the entry content is unchanged, so the keyword NEWS checks are
+  unaffected. Same rename in both solve.sh files and the config
+  `patch` (config diff: one line).
 - Reward needs TWO data channels: the JUnit verdicts AND the
   independent probe (`tests/probe.py`, 39 checks over every graded
   surface, negatives included, specified behavior only). The probe
@@ -355,13 +420,20 @@ report) — CLOSEd this round: the probe's parent writes the verdict
 file after the armed child has exited, so the hook's overwrite is
 moot; `probe_forge` proves the replicated attack (450 forged ids +
 passed payload, 1 pre-fix) now scores 0 (genuine probe failures
-stand). Out of threat model (inherent to SWE-bench, would read as
-TOO_EASY in calibration): replacing the `./python` binary (the
-artifact carries it) to fake BOTH channels, and a protocol-aware
-in-process stdout forgery with early exit (no software-only channel
-a process runs can hide from its own code). The separate verifier
-closes the cross-turn vectors (no /tests or /tmp/grade in the agent
-container).
+stand). (12) Grading-reader rewrite (package init overwriting
+`/tests/parser.py` + `/tests/probe.py` with all-pass forgeries) —
+CLOSEd round 16: submitted code runs unprivileged with /tests
+read-only, so the rewrite fails and the genuine failures stand;
+`tests_tamper` proves the replicated attack (reward 1 pre-fix, with
+the forged readers observed in place) now scores 0 (34 genuine
+probe failures); a /tests snapshot re-verified after the suite is
+the second layer. Out of threat model (inherent to SWE-bench,
+would read as TOO_EASY in calibration): replacing the `./python`
+binary (the artifact carries it) to fake BOTH channels, and a
+protocol-aware in-process stdout forgery with early exit (no
+software-only channel a process runs can hide from its own code).
+The separate verifier closes the cross-turn vectors (no /tests or
+/tmp/grade in the agent container).
 
 Declined on merits (do not re-litigate): one-directional overlap;
 match-without-hyphen; owned-always-true; CLI serve subcommand;
@@ -797,3 +869,62 @@ files, +20 anchors, zero duplicates.
   container trips the integrity gate on a rebuilt `Python/sysmodule.o`
   (run 1's make recompiles after the golden header edit); grading is
   one-shot per container, so verification used fresh containers.
+- Round 16 (REVISION, pre-push beta REVISE with 7 High findings):
+  closed all seven, zero id changes. R02/R08: the offline mirror
+  copies the whole `Tools/packagenamespaces/` directory now (probe
+  fixed directly; suite's `test_scripts_use_no_network` via AUTHOR_1P
+  revise -- contract section rewritten, same id -- plus the permanent
+  `split_harness` pos control). R05/R07: privilege separation --
+  make/install/suite/probe-grandchildren run as nobody, /tests is
+  root-owned read-only, the /tests snapshot is re-verified after the
+  suite, and verdict files are removed up front so a tripped gate
+  can never reward from stale verdicts; the permanent `tests_tamper`
+  neg control replicates the demonstrated reader-rewrite bypass.
+  R06: `grants.exports` pins the `GrandfatheredRegistry` root
+  re-export (identity), and the uploads tests import it from the
+  root via AUTHOR_1P revise (same ids); permanent
+  `exports_drop_grandfathered` neg control. R09: the 97
+  `Python/*.o` entries left the manifest and the gate skips `*.o`.
+  R12: golden NEWS renamed to the blurb-valid
+  `2026-11-04-12-00-00.gh-issue-140000.ss007.rst` (old name
+  reproduced invalid, new name valid, both with blurb's own
+  `load_next`; same rename in both solve.sh files and the config
+  patch, whose diff is one line). Validated in containers of the
+  task image: oracle 1.0 (451/451, probe 45/45, integrity 3122
+  verified, all unprivileged); `tests_tamper` 1 pre-fix (forged
+  readers observed in place) / 0 post-fix (34 genuine probe
+  failures); `exports_drop_grandfathered` 0 post-fix (precise
+  `grants.exports` ImportError); probe-level split flip proven
+  separately (old probe fails `harness.offline` on the missing
+  sibling, new probe passes); `twice` 1.0,1.0 with a clean
+  second-run gate; `split_harness` 0 until the tooling
+  re-authoring lands (expected, round-7 pattern). Preserved green:
+  every previously-green behavior still green (full suite: 4/4 prior
+  pos at 1.0 including upper_html, 12/12 prior neg at 0.0, twice
+  1.0,1.0). Harness mirrors in sync
+  (probe/test.sh/run_script.sh/manifest identical in both trees).
+  Scratch under /home/uldis/cpython/.scratch/ss007-r16/, removed
+  after the run.
+
+## R17 surgical: strip revise keys from kind=tests jobs (2nd occurrence)
+AUTHOR_1P parked authoring_blocked again on the exact R8
+misconfiguration: "revise": true is valid only on kind="instruction"
+jobs. Found and removed "revise" + "revise_reason" from TWO
+kind="tests" jobs (uploads: import GrandfatheredRegistry from the
+package root; tooling: copy the whole Tools/packagenamespaces dir) --
+all six test jobs checked, the other four were already clean. Kept
+"revise": true on the kind="instruction" job (the round-9 re-check
+request is still pending; no instruction page update has landed
+since). No contract edits, no redraw flags added (no target needs
+blank-slate treatment -- both test slices re-author revise-in-place
+automatically on the contract change). Rewrote the file indented
+(same 7 jobs, same targets/sources); verified valid JSON, 7 jobs
+intact, zero kind="tests" jobs carry revise/redraw keys.
+Durable avoidance: before touching AUTHORING_JOBS.json, re-read this
+rule -- "revise" exists ONLY on kind="instruction"; kind="tests"
+re-authoring rides the contract change automatically, so a tests job
+gets NO revise/redraw keys, ever -- and after any edit, run the
+zero-tests-with-revise/redraw assert (the python one-liner used this
+round) before finishing. A tests slice that genuinely needs a
+blank-slate rewrite gets "redraw": true plus a stated reason here,
+never "revise".

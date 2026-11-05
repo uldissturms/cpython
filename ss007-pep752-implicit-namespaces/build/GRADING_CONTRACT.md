@@ -164,7 +164,15 @@ GrantStoreTests (fresh `GrantStore()` per test unless noted):
 
 File `Lib/test/test_pep752_uploads.py`, class `UploadTests`, guarded
 imports of `GrantStore`, `CONFLICT_STATUS`, `GrandfatheredRegistry`,
-`UploadConflictError`, `authorize_upload`. Helper builds a store with
+`UploadConflictError`, `authorize_upload`. `GrantStore` and
+`GrandfatheredRegistry` import from the package ROOT
+(`from packagenamespaces import GrantStore, GrandfatheredRegistry` --
+the instruction requires the root to re-export every public symbol,
+so a tree that drops the root `GrandfatheredRegistry` import fails
+the guarded import and every test below with it);
+`CONFLICT_STATUS`, `UploadConflictError` and `authorize_upload`
+import from `packagenamespaces.uploads` as before. Class and method
+names are unchanged (no id changes). Helper builds a store with
 `"acme"` granted to `"acme-corp"`.
 
 - `test.test_pep752_uploads.UploadTests.test_unreserved_upload_allowed`:
@@ -483,14 +491,21 @@ the `Tools/packagenamespaces/` scripts. `DocsTests` reads doc files.
   then runs `bash gen_fixtures.sh <tmp>` and
   `bash verify_offline.sh <tmp>` with that directory first on PATH:
   both succeed (`verify: all checks passed` for the verifier) and the
-  log shows zero invocations. Then it copies each script, appends
-  comment lines naming network words (`# ... curl wget ... urllib
-  http.client httpx`), and runs the copies the same way (the verify
-  copy runs from a mirrored `Tools/` layout with `Lib` linked back to
-  the repo, since the script derives its root from its own path):
-  both still succeed. A script that shells out to a network command
-  fails (the stub's exit 1 under `set -e`, or the empty-log
-  assertion); a comment merely mentioning one passes.
+  log shows zero invocations. Then it copies the WHOLE
+  `Tools/packagenamespaces/` directory into a mirrored `Tools/`
+  layout with `Lib` linked back to the repo (entrypoints plus every
+  sibling helper the implementation ships -- the instruction never
+  requires the two scripts to be self-contained, so a helper they
+  source or import must keep working after the move), appends comment
+  lines naming network words to the two copied entrypoints only
+  (`# ... curl wget ... urllib http.client httpx`), and runs the
+  copies the same way (the mirror layout matters because the scripts
+  derive their root from their own path): both still succeed. A
+  script that shells out to a network command fails (the stub's
+  exit 1 under `set -e`, or the empty-log assertion); a comment
+  merely mentioning one passes. Copying only the two `.sh` files
+  would reject a legitimate split layout and is NOT what this test
+  does.
 - `test.test_pep752_tooling.DocsTests.test_library_page_documents_module`:
   `Doc/library/packagenamespaces.rst` exists and contains
   `packagenamespaces`, `namespaces`, `SecurityPolicy`,

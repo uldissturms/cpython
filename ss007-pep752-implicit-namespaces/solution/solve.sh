@@ -1341,11 +1341,11 @@ index e74deee..dc2a80d 100644
  		pathlib \
  		profile \
  		profiling profiling/sampling profiling/tracing \
-diff --git a/Misc/NEWS.d/next/Library/2026-11-04-12-00-00.pep-752.ss007.rst b/Misc/NEWS.d/next/Library/2026-11-04-12-00-00.pep-752.ss007.rst
+diff --git a/Misc/NEWS.d/next/Library/2026-11-04-12-00-00.gh-issue-140000.ss007.rst b/Misc/NEWS.d/next/Library/2026-11-04-12-00-00.gh-issue-140000.ss007.rst
 new file mode 100644
 index 0000000..932d41c
 --- /dev/null
-+++ b/Misc/NEWS.d/next/Library/2026-11-04-12-00-00.pep-752.ss007.rst
++++ b/Misc/NEWS.d/next/Library/2026-11-04-12-00-00.gh-issue-140000.ss007.rst
 @@ -0,0 +1,3 @@
 +Add :mod:`packagenamespaces`, implementing :pep:`752` (implicit namespaces
 +for package repositories): namespace grants, upload authorization, JSON
