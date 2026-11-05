@@ -1,0 +1,4 @@
+Need help with a bug or blocked workflow? Run `codimango feedback`.
+prompt: manifold:aai_eval_baselines/tree/agentic-review-resources/prompts (sha256=12a7e6acf75b), rubrics: yes, agent: codex, model: gpt-5.5, tier: container
+error: codimango produced no new job dir (exit 2): Need help with a bug or blocked workflow? Run `codimango feedback`.
+Error: Codimango-paid Codex runs only gpt-6.1-sol, not gpt-5.5; drop -m or pass -m gpt-6.1-sol, or pass your own key with --env, for example --env OPENAI_API_KEY="$OPENAI_API_KEY"; ask oncall:codimango_cli if this model should be approved

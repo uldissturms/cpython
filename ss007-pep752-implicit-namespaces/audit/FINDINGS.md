@@ -1,6 +1,6 @@
 # Carried findings -- ss007-pep752-implicit-namespaces
 
-generated: 2026-11-05T00:54:10-08:00
+generated: 2026-11-05T01:25:13-08:00
 open: 28   adjudicated: 0   total: 28
 
 Critical and High never appear here -- those route to BUILD immediately.
