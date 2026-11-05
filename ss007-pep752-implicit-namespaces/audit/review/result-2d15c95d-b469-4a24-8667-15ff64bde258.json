@@ -1,0 +1,1 @@
+{"artifacts": {"review_report": "audit/review/artifacts/aftr/review.json", "review_report_sha256": "1138766eb5fafdfa3f9e1dfc72432fe8a25ad139342893ae6642a0ab3565efd2"}, "findings": [], "review_skill": "lh-review-task-beta", "reviewed_commit": "f027f9a6628cba19840b74126fdee3ce5db31950", "verdict": "REVISE"}
