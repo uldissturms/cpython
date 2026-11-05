@@ -1,0 +1,35 @@
+{
+    "task": {
+        "path": "review-ss007-pep752-implicit-namespaces"
+    },
+    "trial_name": "review-ss007-pep752-implicit-nam__68d64xq",
+    "trials_dir": "/tmp/lh-aftr.It8G9H/agentic-review-cli-qutxq0sc/jobs/2026-11-04__22-45-30__291b13",
+    "timeout_multiplier": 3.0,
+    "agent": {
+        "import_path": "aai.harbor.agents.codex:MetaCodex",
+        "model_name": "gpt-6.1-sol",
+        "max_timeout_sec": 14400.0,
+        "env": {
+            "NO_PROXY": "${CODIMANGO_AGENT_ENV_4E4F5F50524F5859}",
+            "no_proxy": "${CODIMANGO_AGENT_ENV_6E6F5F70726F7879}"
+        }
+    },
+    "environment": {
+        "type": "docker",
+        "mounts": [
+            {
+                "type": "bind",
+                "source": "/tmp/lh-aftr.It8G9H/agentic-review-cli-qutxq0sc/taskfiles",
+                "target": "/app/taskfiles",
+                "read_only": true
+            }
+        ],
+        "extra_docker_compose": [
+            "/tmp/lh-aftr.It8G9H/agentic-review-cli-qutxq0sc/jobs/2026-11-04__22-45-30__291b13/docker-compose-ai-gateway.yaml"
+        ]
+    },
+    "verifier": {
+        "import_path": "aai.harbor.fork_verifier:ForkVerifier"
+    },
+    "job_id": "25907e49-d0b8-4204-9aee-4aa52b79c865"
+}

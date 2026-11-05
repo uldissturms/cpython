@@ -1,0 +1,160 @@
+Need help with a bug or blocked workflow? Run `codimango feedback`.
+{
+  "attempts": [
+    {
+      "attempt_id": "codex/ss007-pep752-implicit-namespaces__595JHED",
+      "model": "gpt-6.1-sol",
+      "recorded_verdict": "FAIL",
+      "result": "GRADING_FAILURE"
+    }
+  ],
+  "degraded_reason": "",
+  "difficulty": "MIXED",
+  "failed_rubrics": [
+    "R01",
+    "R02",
+    "R03",
+    "R05",
+    "R06",
+    "R07",
+    "R08",
+    "R12"
+  ],
+  "hacked": [],
+  "prompt_origin": "manifold:aai_eval_baselines/tree/agentic-review-resources/prompts",
+  "prompt_sha256": "12a7e6acf75beaf39f7a432a972a1f913aae2798cbf69fe46b499f9b383b3299",
+  "rubrics": [
+    {
+      "dimension": "Task Quality",
+      "evidence": "The active instruction lists submodules but never requires package-root symbol re-exports, although the grader imports GrantStore, constants, and helpers from the root. It also does not unambiguously assign the bare-list versus versioned-envelope return shape to RepositoryIndex.list_namespaces or specify InvalidNamespaceError for an invalid SecurityPolicy namespace.",
+      "focus": "Spec sufficiency",
+      "id": "R01",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Task Quality",
+      "evidence": "test_pep752_semantics.py, test_pep752_uploads.py, test_pep752_metadata.py, and probe.py require unstated package-root exports. test_policy_validates_namespaces additionally pins an unstated exception subtype, and the HTML tests require double-quoted href attributes and a specific escaping representation despite the structural HTML requirement.",
+      "focus": "Spec-test alignment",
+      "id": "R02",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Task Quality",
+      "evidence": "There is only one rollout, so no multi-model pattern can be established; nevertheless, 60 of its reported failures are import failures caused by the omitted root-export contract. After supplying only an in-memory export adapter, 78 of 81 core tests pass, leaving two list-shape failures and one policy-exception error on the other unclear interface choices.",
+      "focus": "Trajectory-informed spec check",
+      "id": "R03",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Task Quality",
+      "evidence": "The extensive inventory specifies behavior but leaves substantial implementation work: normalized grant lifecycle, bidirectional overlap, repository metadata, upload exemptions, policy evaluation, persistent CLI commands, and CPython installation integration. Producing a coherent implementation requires reasoning across these components.",
+      "focus": "Reasoning required",
+      "id": "R04",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Task Quality",
+      "evidence": "The solve-time checkout contains no reference package or visible grading suite; the taskfiles review mount is not evidence of a solve-time leak. However, grading imports agent-controlled code with permission to write the expected result artifacts directly: an isolated reproduction overwrote both JUnit and probe JSON at interpreter shutdown and satisfied the reward predicate with a broken implementation.",
+      "focus": "Information isolation",
+      "id": "R05",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "Both behavioral channels omit mixed-case/separator membership queries for GrantStore and GrandfatheredRegistry; replacing their membership methods with raw, unnormalized lookups still passes all 108 non-install reference tests. Fixture damage checks also omit malformed entries inside a list-valued second-index grants field, which the reference verifier accepts.",
+      "focus": "Test coverage",
+      "id": "R06",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "The independent probe executes the submitted package inside the process that writes probe.json, under the same permissions, so isolation flags do not protect its verdict. Extending the supplied junit_forge negative control with a shutdown hook to overwrite the probe payload produced 450 forged passing IDs and passed=true even though the probe logged 39/39 genuine check failures; the final reward predicate accepted both artifacts.",
+      "focus": "Reward-hacking",
+      "id": "R07",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "A reference renderer modified only to use valid single-quoted href attributes fails test_html_semantically_stable; probe.metadata_html rejects it too. Submodule-only public APIs and ValueError policy validation are also reasonable interpretations of the visible contract that the grader rejects.",
+      "focus": "Accepts alternatives",
+      "id": "R08",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "The recorded verifier completed normally in approximately 51 seconds, with all 340 required regression tests passing and no scoring-time exception or timeout. Runtime checks are local and deterministic; the rollout's transient interpreter crash occurred during solving and recovered before grading.",
+      "focus": "Test reliability",
+      "id": "R09",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "A baseline run of all 110 new tests, using their intended repository filenames without modifying the checkout, found no fail-to-pass ID already passing. Missing package functionality, documentation, scripts, and installation registration account for the baseline failures.",
+      "focus": "Test validity",
+      "id": "R10",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Grading / Test Quality",
+      "evidence": "Verification uses CPU-only local tests and a staged CPython installation, with an observed total verifier duration of about 51 seconds and suite duration of 5.9 seconds. This is substantially cheaper than implementing and validating the complete package and needs neither human assessment nor specialized hardware.",
+      "focus": "Verification efficiency",
+      "id": "R11",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Golden Solution Quality",
+      "evidence": "The active step reference's verify_offline.sh validates second-index grants only as a list and then ignores its contents. After generating its fixtures and replacing that field with [123], the reference verifier still exited zero and printed 'verify: all checks passed', violating the explicit damaged-fixture and every-shape validation requirements.",
+      "focus": "Golden correctness",
+      "id": "R12",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Golden Solution Quality",
+      "evidence": "No oracle trial is supplied, so full oracle consistency cannot be established from rollouts. The active step reference passed all 108 non-install tests twice in isolated checks; its inspected build registration matches the integration exercised successfully by the rollout, and there is no observed reference grading failure.",
+      "focus": "Golden reliability",
+      "id": "R13",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Optional",
+      "evidence": "The behavior is relevant to package security, but a new CPython standard-library package containing index-service models, installer policy, a grant-management CLI, and bespoke fixtures is an artificial project boundary. The instruction's inventory of exact symbols and output fragments also does not resemble a typical CPython feature request.",
+      "focus": "Real-world relevance",
+      "id": "N01",
+      "verdict": "FAIL"
+    },
+    {
+      "dimension": "Optional",
+      "evidence": "The task benefits from packaging-name normalization and Simple API knowledge, plus CPython's LIBSUBDIRS, generated standard-library module list, and staged-install conventions. These are specialized ecosystem and repository details beyond ordinary application coding.",
+      "focus": "Knowledge depth",
+      "id": "N02",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Optional",
+      "evidence": "There is no external seed dataset; the requested fixtures intentionally model normalized project names, grant ownership, exemptions, and a separate index. Their small size is sufficient for these discrete semantics and does not remove the need for a general implementation.",
+      "focus": "Data realism",
+      "id": "N03",
+      "verdict": "PASS"
+    },
+    {
+      "dimension": "Optional",
+      "evidence": "The underlying implementation offers useful reasoning challenges, but the observed binary reward is dominated by undisclosed import aliases and interface choices. As currently specified and graded, a strong completed implementation receives the same zero as the untouched baseline, obscuring the desired capability signal.",
+      "focus": "Training signal",
+      "id": "N04",
+      "verdict": "FAIL"
+    }
+  ],
+  "rubrics_used": true,
+  "secondary_issues": [
+    "BAD_GRADING_WRONG",
+    "BAD_GRADING_WEAK",
+    "BAD_AMBIGUOUS",
+    "BAD_GOLDEN"
+  ],
+  "task_type": "SWEBENCH",
+  "tier": "container",
+  "verdict": "BAD_LEAKAGE"
+}prompt: manifold:aai_eval_baselines/tree/agentic-review-resources/prompts (sha256=12a7e6acf75b), rubrics: yes, agent: codex, model: gpt-6.1-sol, tier: container
+
+wrote /home/uldis/.local/state/lambo-express/worktrees/966242675113c65a/ss007-pep752-implicit-namespaces/ss007-pep752-implicit-namespaces/audit/review/artifacts/aftr/review.xml and /home/uldis/.local/state/lambo-express/worktrees/966242675113c65a/ss007-pep752-implicit-namespaces/ss007-pep752-implicit-namespaces/audit/review/artifacts/aftr/review.json
+

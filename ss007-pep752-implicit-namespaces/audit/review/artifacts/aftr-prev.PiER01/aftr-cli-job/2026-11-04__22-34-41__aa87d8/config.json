@@ -1,0 +1,51 @@
+{
+    "job_name": "2026-11-04__22-34-41__aa87d8",
+    "jobs_dir": "/tmp/lh-aftr.tFTxDw/agentic-review-cli-9mqqhzb1/jobs",
+    "timeout_multiplier": 3.0,
+    "debug": true,
+    "n_concurrent_trials": 1,
+    "retry": {
+        "max_retries": 3,
+        "include_exceptions": [
+            "AgentSetupTimeoutError",
+            "AgentInstallError",
+            "EnvironmentStartTimeoutError"
+        ],
+        "wait_multiplier": 2.0,
+        "min_wait_sec": 10.0,
+        "max_wait_sec": 120.0
+    },
+    "environment": {
+        "type": "docker",
+        "mounts": [
+            {
+                "type": "bind",
+                "source": "/tmp/lh-aftr.tFTxDw/agentic-review-cli-9mqqhzb1/taskfiles",
+                "target": "/app/taskfiles",
+                "read_only": true
+            }
+        ],
+        "extra_docker_compose": [
+            "/tmp/lh-aftr.tFTxDw/agentic-review-cli-9mqqhzb1/jobs/2026-11-04__22-34-41__aa87d8/docker-compose-ai-gateway.yaml"
+        ]
+    },
+    "verifier": {
+        "import_path": "aai.harbor.fork_verifier:ForkVerifier"
+    },
+    "agents": [
+        {
+            "import_path": "aai.harbor.agents.codex:MetaCodex",
+            "model_name": "gpt-6.1-sol",
+            "max_timeout_sec": 14400.0,
+            "env": {
+                "NO_PROXY": "${CODIMANGO_AGENT_ENV_4E4F5F50524F5859}",
+                "no_proxy": "${CODIMANGO_AGENT_ENV_6E6F5F70726F7879}"
+            }
+        }
+    ],
+    "tasks": [
+        {
+            "path": "review-ss007-pep752-implicit-namespaces"
+        }
+    ]
+}

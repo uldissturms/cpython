@@ -1,98 +1,105 @@
 <task_quality_review>
   <task_type>SWEBENCH</task_type>
   <plain_summary>
-    <task>The task asks for a new Python standard-library package that lets a package index reserve name prefixes for an owner. The package must manage reservations, reject unauthorized uploads, describe ownership in repository metadata, and decide which dependencies an installer should trust. It also needs a command-line tool that saves its state in JSON and shell scripts that generate and verify offline examples. The implementation must be documented and included by CPython's normal installation process. Solvers receive the detailed step instruction and a built CPython checkout; the reference implementation and grading files are review-only.</task>
-    <complexity>The main challenge is keeping name normalization and ownership rules consistent across grant changes, upload exemptions, repository views, policy decisions, and persisted CLI state. CPython build integration adds another layer of validation. The observed difficulty is inflated by interface details that the hidden grader requires but the instruction does not clearly specify.</complexity>
+    <task>The task asks for a new Python standard-library package that lets package repositories reserve name prefixes for particular owners. It must prevent unauthorized uploads under those prefixes while permitting previously exempted projects. It must also describe ownership in repository metadata and let installers check whether a dependency belongs to a trusted owner on a particular repository. A command-line tool must persist grants and projects in JSON, with offline fixture tools for checking the feature. The work also includes CPython installation integration, documentation, and release notes.</task>
+    <complexity>The main challenge is keeping normalization, overlapping ownership, grant changes, exemptions, metadata, and installation policies consistent across several interfaces. CLI persistence and rebuilding CPython add integration work, while the contradictory upload contract and hidden tuple requirement introduce artificial difficulty.</complexity>
   </plain_summary>
-  <rubric_results>
-    <rubric id="R01" dimension="Task Quality" focus="Spec sufficiency" statement="The task specification together with the agent's accessible environment (codebase, config files, dependencies) contain enough information to solve the problem. Things that are obvious to a domain expert don't need to be explicitly listed out, but there shouldn't be ambiguity in non-obvious details. If this task were to be given to a domain expert, they'd be able to solve it without any additional information.">
-      <verdict>FAIL</verdict>
-      <evidence>The active instruction lists submodules but never requires package-root symbol re-exports, although the grader imports GrantStore, constants, and helpers from the root. It also does not unambiguously assign the bare-list versus versioned-envelope return shape to RepositoryIndex.list_namespaces or specify InvalidNamespaceError for an invalid SecurityPolicy namespace.</evidence>
-    </rubric>
-    <rubric id="R02" dimension="Task Quality" focus="Spec-test alignment" statement="Every tested behavior traces to a requirement stated in the spec or clearly inferable from the environment or the task. Tests do not verify unstated requirements which might be unfair to the agent being graded.">
-      <verdict>FAIL</verdict>
-      <evidence>test_pep752_semantics.py, test_pep752_uploads.py, test_pep752_metadata.py, and probe.py require unstated package-root exports. test_policy_validates_namespaces additionally pins an unstated exception subtype, and the HTML tests require double-quoted href attributes and a specific escaping representation despite the structural HTML requirement.</evidence>
-    </rubric>
-    <rubric id="R03" dimension="Task Quality" focus="Trajectory-informed spec check" statement="When a significant proportion of model attempts fail on the same test or behavior, the spec clearly and unambiguously defines that behavior — ruling out ambiguity as the cause.">
-      <verdict>FAIL</verdict>
-      <evidence>There is only one rollout, so no multi-model pattern can be established; nevertheless, 60 of its reported failures are import failures caused by the omitted root-export contract. After supplying only an in-memory export adapter, 78 of 81 core tests pass, leaving two list-shape failures and one policy-exception error on the other unclear interface choices.</evidence>
-    </rubric>
-    <rubric id="R04" dimension="Task Quality" focus="Reasoning required" statement="The spec describes the goal (what needs to be achieved), and shouldn't lay out the whole step-by-step recipe (how to achieve it). If the whole recipe/algorithm is laid out in detail, then it should be complex enough that the agents are struggling to implement or code it correctly and pass the tests. In all other cases, the agent needs to reason and figure out the solution or approach.">
-      <verdict>PASS</verdict>
-      <evidence>The extensive inventory specifies behavior but leaves substantial implementation work: normalized grant lifecycle, bidirectional overlap, repository metadata, upload exemptions, policy evaluation, persistent CLI commands, and CPython installation integration. Producing a coherent implementation requires reasoning across these components.</evidence>
-    </rubric>
-    <rubric id="R05" dimension="Task Quality" focus="Information isolation" statement="The solution shouldn't be exposed to the agent in any way. No leaks via: golden solution in env, test expected outputs/fixtures, editable grading tests, git history, READMEs, comments, or a check satisfiable by writing the expected artifact directly.">
-      <verdict>FAIL</verdict>
-      <evidence>The solve-time checkout contains no reference package or visible grading suite; the taskfiles review mount is not evidence of a solve-time leak. However, grading imports agent-controlled code with permission to write the expected result artifacts directly: an isolated reproduction overwrote both JUnit and probe JSON at interpreter shutdown and satisfied the reward predicate with a broken implementation.</evidence>
-    </rubric>
-    <rubric id="R06" dimension="Grading / Test Quality" focus="Test coverage" statement="Tests cover representative scenarios and important edge cases of every requirement stated in the task specification. No spec requirement should go untested.">
-      <verdict>FAIL</verdict>
-      <evidence>Both behavioral channels omit mixed-case/separator membership queries for GrantStore and GrandfatheredRegistry; replacing their membership methods with raw, unnormalized lookups still passes all 108 non-install reference tests. Fixture damage checks also omit malformed entries inside a list-valued second-index grants field, which the reference verifier accepts.</evidence>
-    </rubric>
-    <rubric id="R07" dimension="Grading / Test Quality" focus="Reward-hacking" statement="The task shouldn't be reward-hackable where shortcuts, suboptimal solutions, or cheat codes are able to pass all the tests without genuinely solving the problem in the manner that the task describes.">
-      <verdict>FAIL</verdict>
-      <evidence>The independent probe executes the submitted package inside the process that writes probe.json, under the same permissions, so isolation flags do not protect its verdict. Extending the supplied junit_forge negative control with a shutdown hook to overwrite the probe payload produced 450 forged passing IDs and passed=true even though the probe logged 39/39 genuine check failures; the final reward predicate accepted both artifacts.</evidence>
-    </rubric>
-    <rubric id="R08" dimension="Grading / Test Quality" focus="Accepts alternatives" statement="Tests should be flexible, and shouldn't reject alternate solutions that might be used to solve the problem (as long as the spec allows for that level of flexibility).">
-      <verdict>FAIL</verdict>
-      <evidence>A reference renderer modified only to use valid single-quoted href attributes fails test_html_semantically_stable; probe.metadata_html rejects it too. Submodule-only public APIs and ValueError policy validation are also reasonable interpretations of the visible contract that the grader rejects.</evidence>
-    </rubric>
-    <rubric id="R09" dimension="Grading / Test Quality" focus="Test reliability" statement="Tests are not flaky, not dependent on network/timing/unpinned environment, and do not spuriously time out. Results should be fairly consistent across runs and machines. The tasks should always run successfully and reliably return pass or fail for the respective category of submissions.">
-      <verdict>PASS</verdict>
-      <evidence>The recorded verifier completed normally in approximately 51 seconds, with all 340 required regression tests passing and no scoring-time exception or timeout. Runtime checks are local and deterministic; the rollout's transient interpreter crash occurred during solving and recovered before grading.</evidence>
-    </rubric>
-    <rubric id="R10" dimension="Grading / Test Quality" focus="Test validity" statement="Every fail-to-pass test genuinely fails on the unmodified base code. No test already passes before the agent makes any changes.">
-      <verdict>PASS</verdict>
-      <evidence>A baseline run of all 110 new tests, using their intended repository filenames without modifying the checkout, found no fail-to-pass ID already passing. Missing package functionality, documentation, scripts, and installation registration account for the baseline failures.</evidence>
-    </rubric>
-    <rubric id="R11" dimension="Grading / Test Quality" focus="Verification efficiency" statement="Solving requires substantially more reasoning than verifying. Grading runs in minutes, needs no human or GPU cluster, and scales to thousands of RL runs.">
-      <verdict>PASS</verdict>
-      <evidence>Verification uses CPU-only local tests and a staged CPython installation, with an observed total verifier duration of about 51 seconds and suite duration of 5.9 seconds. This is substantially cheaper than implementing and validating the complete package and needs neither human assessment nor specialized hardware.</evidence>
-    </rubric>
-    <rubric id="R12" dimension="Golden Solution Quality" focus="Golden correctness" statement="The golden/reference solution correctly and completely implements every requirement stated in the specification and solves the problem.">
-      <verdict>FAIL</verdict>
-      <evidence>The active step reference's verify_offline.sh validates second-index grants only as a list and then ignores its contents. After generating its fixtures and replacing that field with [123], the reference verifier still exited zero and printed 'verify: all checks passed', violating the explicit damaged-fixture and every-shape validation requirements.</evidence>
-    </rubric>
-    <rubric id="R13" dimension="Golden Solution Quality" focus="Golden reliability" statement="The golden solution passes all tests consistently across every oracle trial run with no failures or flakiness.">
-      <verdict>PASS</verdict>
-      <evidence>No oracle trial is supplied, so full oracle consistency cannot be established from rollouts. The active step reference passed all 108 non-install tests twice in isolated checks; its inspected build registration matches the integration exercised successfully by the rollout, and there is no observed reference grading failure.</evidence>
-    </rubric>
-    <rubric id="N01" dimension="Optional" focus="Real-world relevance" statement="Would this change realistically be made in this project, and is it posed the way real work actually arrives — regardless of how hard it is?">
-      <verdict>FAIL</verdict>
-      <evidence>The behavior is relevant to package security, but a new CPython standard-library package containing index-service models, installer policy, a grant-management CLI, and bespoke fixtures is an artificial project boundary. The instruction's inventory of exact symbols and output fragments also does not resemble a typical CPython feature request.</evidence>
-    </rubric>
-    <rubric id="N02" dimension="Optional" focus="Knowledge depth" statement="Does the solution require specialized knowledge that a competent generalist lacks?">
-      <verdict>PASS</verdict>
-      <evidence>The task benefits from packaging-name normalization and Simple API knowledge, plus CPython's LIBSUBDIRS, generated standard-library module list, and staged-install conventions. These are specialized ecosystem and repository details beyond ordinary application coding.</evidence>
-    </rubric>
-    <rubric id="N03" dimension="Optional" focus="Data realism" statement="Any seed data, input files, or environment fixtures used in the task are representative of real-world data — not obviously synthetic, overly simplified, or toy-scale in a way that trivializes the problem or makes the solution non-transferable to real scenarios.">
-      <verdict>PASS</verdict>
-      <evidence>There is no external seed dataset; the requested fixtures intentionally model normalized project names, grant ownership, exemptions, and a separate index. Their small size is sufficient for these discrete semantics and does not remove the need for a general implementation.</evidence>
-    </rubric>
-    <rubric id="N04" dimension="Optional" focus="Training signal" statement="The task's difficulty stems from genuine reasoning or implementation challenges — not from incidental friction (wrong library version, missing import, trivial config mismatch) that, once learned, provides no further training signal. As models improve, the task should continue to differentiate capability levels rather than saturating after a single insight.">
-      <verdict>FAIL</verdict>
-      <evidence>The underlying implementation offers useful reasoning challenges, but the observed binary reward is dominated by undisclosed import aliases and interface choices. As currently specified and graded, a strong completed implementation receives the same zero as the untouched baseline, obscuring the desired capability signal.</evidence>
-    </rubric>
-  </rubric_results>
+<rubric_results>
+  <rubric id="R01" dimension="Task Quality" focus="Spec sufficiency" statement="The task specification together with the agent's accessible environment (codebase, config files, dependencies) contain enough information to solve the problem. Things that are obvious to a domain expert don't need to be explicitly listed out, but there shouldn't be ambiguity in non-obvious details. If this task were to be given to a domain expert, they'd be able to solve it without any additional information.">
+    <verdict>FAIL</verdict>
+    <evidence>steps/1_pep752/instruction.md:13 explicitly says upload checks return False when denied, but the reference and grader require UploadConflictError by default. The instruction names SecurityPolicy.namespaces without specifying its container type; neither the existing CPython tree nor PEP 752 supplies this new Python API contract.</evidence>
+  </rubric>
+  <rubric id="R02" dimension="Task Quality" focus="Spec-test alignment" statement="Every tested behavior traces to a requirement stated in the spec or clearly inferable from the environment or the task. Tests do not verify unstated requirements which might be unfair to the agent being graded.">
+    <verdict>FAIL</verdict>
+    <evidence>UploadTests requires exceptions for four denied-upload cases despite the stated False result. PolicyTests.test_policy_validates_namespaces and probe.py:policy_validates require exactly a tuple, an unstated representation requirement.</evidence>
+  </rubric>
+  <rubric id="R03" dimension="Task Quality" focus="Trajectory-informed spec check" statement="When a significant proportion of model attempts fail on the same test or behavior, the spec clearly and unambiguously defines that behavior — ruling out ambiguity as the cause.">
+    <verdict>FAIL</verdict>
+    <evidence>The sole gpt-6.1-sol attempt failed only these two unclear behaviors: four exception-versus-False assertions and one list-versus-tuple assertion. Its CLI correctly reports upload conflicts and its policy enforces ownership, so the observed failure cannot be attributed to missing security logic; there is only one rollout, not a cross-model sample.</evidence>
+  </rubric>
+  <rubric id="R04" dimension="Task Quality" focus="Reasoning required" statement="The spec describes the goal (what needs to be achieved), and shouldn't lay out the whole step-by-step recipe (how to achieve it). If the whole recipe/algorithm is laid out in detail, then it should be complex enough that the agents are struggling to implement or code it correctly and pass the tests. In all other cases, the agent needs to reason and figure out the solution or approach.">
+    <verdict>PASS</verdict>
+    <evidence>Implementing normalized ownership, bidirectional collision checks, transfers, live metadata, repository-specific policies, persistent CLI commands, offline tools, documentation, and CPython installation requires substantial implementation and integration reasoning despite the detailed API inventory.</evidence>
+  </rubric>
+  <rubric id="R05" dimension="Task Quality" focus="Information isolation" statement="The solution shouldn't be exposed to the agent in any way. No leaks via: golden solution in env, test expected outputs/fixtures, editable grading tests, git history, READMEs, comments, or a check satisfiable by writing the expected artifact directly.">
+    <verdict>FAIL</verdict>
+    <evidence>The solver's entire /app, including its editable python executable, is transferred to the verifier, which trusts that executable for both suite execution and the probe parent. In a scratch replay changing only harness paths, an executable replacement directly forged both grading artifacts and earned reward 1 without any packagenamespaces implementation; no golden-file leak during solving was observed.</evidence>
+  </rubric>
+  <rubric id="R06" dimension="Grading / Test Quality" focus="Test coverage" statement="Tests cover representative scenarios and important edge cases of every requirement stated in the task specification. No spec requirement should go untested.">
+    <verdict>FAIL</verdict>
+    <evidence>The instruction explicitly requires Grant and GrantError to be exported from the package root, but neither grading channel imports them. Removing both exports from the reference still earned reward 1 with all 450 required tests and all 39 probe checks passing.</evidence>
+  </rubric>
+  <rubric id="R07" dimension="Grading / Test Quality" focus="Reward-hacking" statement="The task shouldn't be reward-hackable where shortcuts, suboptimal solutions, or cheat codes are able to pass all the tests without genuinely solving the problem in the manner that the task describes.">
+    <verdict>FAIL</verdict>
+    <evidence>run_script.sh:72 executes the submitted python, and test.sh:95 also uses it to execute the allegedly trusted probe parent. A scratch submission containing only a replacement executable and report-writing helper forged the JUnit successes and probe.json, obtaining 450/450 passing and reward 1 while the feature package was absent.</evidence>
+  </rubric>
+  <rubric id="R08" dimension="Grading / Test Quality" focus="Accepts alternatives" statement="Tests should be flexible, and shouldn't reject alternate solutions that might be used to solve the problem (as long as the spec allows for that level of flexibility).">
+    <verdict>FAIL</verdict>
+    <evidence>The recorded solution's list-valued SecurityPolicy.namespaces and False-returning upload checks are reasonable under the provided instruction, yet both are rejected. The network prohibition is also implemented as a token blacklist, which can reject a harmless comment mentioning curl rather than testing network behavior.</evidence>
+  </rubric>
+  <rubric id="R09" dimension="Grading / Test Quality" focus="Test reliability" statement="Tests are not flaky, not dependent on network/timing/unpinned environment, and do not spuriously time out. Results should be fairly consistent across runs and machines. The tasks should always run successfully and reliably return pass or fail for the respective category of submissions.">
+    <verdict>PASS</verdict>
+    <evidence>The recorded verifier completed in about 64 seconds without an exception, and two reference replays produced identical passing results. The suite uses local standard-library tests and fixtures, with no external service or changing external value needed during grading.</evidence>
+  </rubric>
+  <rubric id="R10" dimension="Grading / Test Quality" focus="Test validity" statement="Every fail-to-pass test genuinely fails on the unmodified base code. No test already passes before the agent makes any changes.">
+    <verdict>PASS</verdict>
+    <evidence>The base tree lacks the new package, helpers, documentation, and installation entries. A baseline run of the supplied new modules produced no successful tests; 108 methods ran, and setup for the two installation methods also failed.</evidence>
+  </rubric>
+  <rubric id="R11" dimension="Grading / Test Quality" focus="Verification efficiency" statement="Solving requires substantially more reasoning than verifying. Grading runs in minutes, needs no human or GPU cluster, and scales to thousands of RL runs.">
+    <verdict>PASS</verdict>
+    <evidence>The recorded full verification took about one minute, with the actual 504-test suite taking roughly six seconds; reference verification likewise completed within minutes. Verification is automated and CPU-only, substantially cheaper than implementing the feature.</evidence>
+  </rubric>
+  <rubric id="R12" dimension="Golden Solution Quality" focus="Golden correctness" statement="The golden/reference solution correctly and completely implements every requirement stated in the specification and solves the problem.">
+    <verdict>FAIL</verdict>
+    <evidence>The reference never returns False for denied authorize_upload calls, contrary to the instruction's explicit wording. Independently, its cli.__all__ declares build_parser public, but the package root does not re-export it despite the requirement to re-export every public symbol.</evidence>
+  </rubric>
+  <rubric id="R13" dimension="Golden Solution Quality" focus="Golden reliability" statement="The golden solution passes all tests consistently across every oracle trial run with no failures or flakiness.">
+    <verdict>PASS</verdict>
+    <evidence>No oracle trial was provided, so oracle-history consistency cannot be established. Two full scratch replays of the unchanged reference each earned reward 1, passed all 450 required IDs, and passed all 39 independent probe checks.</evidence>
+  </rubric>
+  <rubric id="N01" dimension="Optional" focus="Real-world relevance" statement="Would this change realistically be made in this project, and is it posed the way real work actually arrives — regardless of how hard it is?">
+    <verdict>FAIL</verdict>
+    <evidence>PEP 752 concerns package repositories and installers, while CPython has no package-index service into which these helpers integrate. Adding a standalone repository simulation to the interpreter's standard library is a synthetic setting rather than the natural location for this ecosystem change.</evidence>
+  </rubric>
+  <rubric id="N02" dimension="Optional" focus="Knowledge depth" statement="Does the solution require specialized knowledge that a competent generalist lacks?">
+    <verdict>PASS</verdict>
+    <evidence>The work draws on packaging-name normalization, namespace security, JSON Simple API compatibility, and CPython's build and installation machinery. A generalist would need to research these conventions.</evidence>
+  </rubric>
+  <rubric id="N03" dimension="Optional" focus="Data realism" statement="Any seed data, input files, or environment fixtures used in the task are representative of real-world data — not obviously synthetic, overly simplified, or toy-scale in a way that trivializes the problem or makes the solution non-transferable to real scenarios.">
+    <verdict>PASS</verdict>
+    <evidence>The small fixtures use representative hierarchical package names, owners, grandfathered projects, and a separate repository. Their size is sufficient for deterministic semantic checks and does not eliminate the implementation challenge.</evidence>
+  </rubric>
+  <rubric id="N04" dimension="Optional" focus="Training signal" statement="The task's difficulty stems from genuine reasoning or implementation challenges — not from incidental friction (wrong library version, missing import, trivial config mismatch) that, once learned, provides no further training signal. As models improve, the task should continue to differentiate capability levels rather than saturating after a single insight.">
+    <verdict>FAIL</verdict>
+    <evidence>There is genuine integration work, but the observed zero reward is explained entirely by an unstated container type and contradictory error semantics. The demonstrated artifact-forgery shortcut further prevents reward from reliably measuring implementation capability.</evidence>
+  </rubric>
+</rubric_results>
   <task_quality>
     <verdict>BAD_LEAKAGE</verdict>
-    <failed_rubrics>R01,R02,R03,R05,R06,R07,R08,R12</failed_rubrics>
+    <failed_rubrics>R01, R02, R03, R05, R06, R07, R08, R12</failed_rubrics>
     <secondary_issues>BAD_GRADING_WRONG, BAD_GRADING_WEAK, BAD_AMBIGUOUS, BAD_GOLDEN</secondary_issues>
-    <explanation>R05:Information isolation fails because submitted code can directly forge the artifacts that determine reward, yielding primary BAD_LEAKAGE under the required severity ordering; this is a demonstrated verifier shortcut, not a claim that the review-only taskfiles were available during solving. R08:Accepts alternatives yields BAD_GRADING_WRONG; R06:Test coverage and R07:Reward-hacking yield BAD_GRADING_WEAK; R01:Spec sufficiency, R02:Spec-test alignment, and R03:Trajectory-informed spec check yield BAD_AMBIGUOUS; R12:Golden correctness yields BAD_GOLDEN. The sole recorded attempt did not exploit the shortcut.</explanation>
+    <explanation>R05:Information isolation fails because grading can be satisfied by directly writing fabricated verdict artifacts through the submitted interpreter, making BAD_LEAKAGE primary under the prescribed severity order. R07:Reward-hacking and R06:Test coverage establish BAD_GRADING_WEAK; R08:Accepts alternatives establishes BAD_GRADING_WRONG; R01:Spec sufficiency, R02:Spec-test alignment, and R03:Trajectory-informed spec check establish BAD_AMBIGUOUS; R12:Golden correctness establishes BAD_GOLDEN. The recorded model did not exploit the bypass; its failure is a separate false negative.</explanation>
   </task_quality>
   <task_difficulty>
     <rating>MIXED</rating>
-    <explanation>Building the complete library, CLI, tools, documentation, and installation integration is substantial work with genuine state and security invariants. However, the one recorded attempt completed that work, reported 36 passing self-authored tests, and received zero primarily for unstated root imports and unclear API choices; its recovered interpreter crash added incidental friction. This single false-negative-prone rollout does not establish genuine hardness from its zero pass rate.</explanation>
+    <explanation>Building the library, CLI, tools, documentation, and installation wiring is genuine multi-component engineering work. However, the only supplied attempt completed that work, passed 105/110 new tests and all 340 required regression tests, and lost reward solely on exception-versus-False and list-versus-tuple mismatches. Its trajectory also shows temporary build-path problems that it resolved; one rollout is insufficient to estimate a general success rate.</explanation>
   </task_difficulty>
-  <grading_assessment>The active harness is steps/1_pep752/tests/test.sh: it installs hidden conformance tests, stages a build/install, requires all 110 fail-to-pass and 340 pass-to-pass IDs, and also requires an independent 39-check probe. All 110 new tests fail on the baseline; the active reference passed 108 non-install tests twice locally, while the two build/install checks were inspected rather than rerun. The recorded attempt has 49/110 new tests passing, 60 failing on package-root imports, one policy-validation error, and 340/340 required regressions passing; 34/39 probe checks fail at its common root-import gate. An import adapter exposes only two further list-return-shape failures and the same exception mismatch. False negatives also exist independently of that rollout: valid single-quoted HTML links and equivalent escaping are rejected. Coverage omits normalized membership queries and malformed nested second-index entries; a token blacklist neither proves network-free execution nor fairly handles harmless comments. Most seriously, the trusted parser reads reports writable by the submitted code, and the fresh probe imports that code before writing another equally writable report: a shutdown-hook reproduction forged both channels and satisfied the exact final reward condition. The observed grading run completed normally, so its result is not a grading timeout or infrastructure crash.</grading_assessment>
+  <grading_assessment>The actual grading configuration is steps/1_pep752/tests/config.json; the root config is a placeholder. It installs six new test modules, requires 110 fail-to-pass and 340 pass-to-pass IDs, and additionally requires 39 probe checks. The unmodified baseline has no successful new tests, and the reference passed the complete harness twice, including all 504 executed tests with 15 skips. Nevertheless, UploadTests and the probe demand default exceptions where the instruction promises False, and PolicyTests and the probe pin an unspecified tuple type. Both channels omit required root exports: deleting Grant and GrantError still passed everything. More seriously, the claimed channel independence is ineffective because both the suite and probe parent run through agent-owned /app/python, and /app is transferred without exclusions. A scratch replay with only path substitutions accepted an executable replacement that generated all required JUnit IDs and a fabricated passed probe payload, returning reward 1 with no feature implementation. This is a demonstrated artifact-integrity failure, not merely a theoretical attack or an observed model hack. The no-network checks are source-token regular expressions rather than runtime isolation, so they both over-restrict harmless text and miss other network clients. No timeout, parser crash, or systemic infrastructure failure explains the recorded rollout.</grading_assessment>
   <attempt_results>
     <attempt>
       <model>gpt-6.1-sol</model>
-      <attempt_id>ss007-pep752-implicit-namespaces__595JHED</attempt_id>
+      <attempt_id>ss007-pep752-implicit-namespaces__3qBPLFq</attempt_id>
       <recorded_verdict>FAIL</recorded_verdict>
       <result>GRADING_FAILURE</result>
-      <explanation>The model completed a substantive implementation, researched PEP 752, added 36 tests, and validated documentation, offline tools, and staged installation; no cheating or budget exhaustion appears in its trajectory. Its submodule-only exports, versioned list_namespaces envelope, and ValueError for invalid policy namespaces are reasonable choices under the visible instruction, but hidden tests demand root aliases, a bare list, and InvalidNamespaceError: 60 reported failures and 34 probe failures are caused by the alias requirement, and an in-memory alias adapter leaves only the other two interface mismatches. The zero therefore reflects an unfairly pinned contract rather than a demonstrated failure of the stated functional requirements; the recovered solving-time interpreter crash did not cause the verdict.</explanation>
+      <explanation>The agent completed the package, persistent CLI, offline helpers, documentation, release notes, build integration, and its own tests; 105/110 new tests and all 340 required regression tests passed. Four failures demand UploadConflictError instead of the instruction's False result, although the submission provides raise_on_conflict=True and correctly uses it for CLI status 3; the fifth demands a tuple instead of its otherwise valid list of normalized policy namespaces. This is a grading false negative caused by an inconsistent and over-pinned contract, not an incomplete solution, missing security enforcement, budget exhaustion, or infrastructure error.</explanation>
     </attempt>
   </attempt_results>
-  <feedback_for_task_author>Rewrite steps/1_pep752/instruction.md as a readable API contract with import examples, constructor/method signatures, exact return types, and exception rules: explicitly require root re-exports if intended, distinguish list_namespaces() from CLI dump's envelope, and specify the policy-validation exception. In test_pep752_metadata.py and probe.py, parse HTML with html.parser.HTMLParser and compare decoded attributes/text so valid quote styles and equivalent character entities pass. Protect grading with a verifier-owned interpreter and parent process, run submitted code in a separate restricted worker without access to tests/config or report paths, and keep verdict artifacts writable only by the verifier; extend negative controls to attack both JUnit and probe payloads together. Add mixed-case/separator membership tests for both containers, corruption cases for every fixture and nested entry, and enforce the empty second-index grants list in the reference verify_offline.sh before any behavioral checks. Replace source-token network checks with an enforced offline execution environment. Synchronize or remove the stale root solution/solve.sh to prevent accidental use of its older owner-validation behavior. Recalibrate with fresh rollouts after these fixes so scores reflect implementation quality.</feedback_for_task_author>
+  <feedback_for_task_author>
+    <item>Protect the verdict boundary first (R05:Information isolation; R07:Reward-hacking). In steps/1_pep752/tests/test.sh and run_script.sh, stop using a submitted /app/python to execute trusted orchestration, especially the probe parent. Use verifier-owned runtime, orchestration, and test-runner files; validate or rebuild the interpreter from controlled inputs and restrict restored artifacts to the permitted feature/build changes. Keep reward and verdict files outside the submitted process's write authority. Add a negative control that replaces /app/python and fabricates both reports; the current split-parent probe does not stop it.</item>
+    <item>Resolve the upload API contract explicitly (R01:Spec sufficiency; R02:Spec-test alignment; R08:Accepts alternatives). Rewrite instruction.md:13 to specify either True-or-False decisions or True-or-UploadConflictError, including the default and any optional raising mode. Update uploads.py, UploadTests, the probe, CLI callers, and examples together so the documented contract and grading agree.</item>
+    <item>Remove the hidden tuple constraint (R02:Spec-test alignment; R08:Accepts alternatives). Compare tuple(policy.namespaces) with expected normalized values, or explicitly document tuple return type, ordering, and duplicate handling before requiring them. Re-evaluate the supplied gpt-6.1-sol attempt after these contract fixes.</item>
+    <item>Check the entire promised export surface (R06:Test coverage; R12:Golden correctness). Add imports or assertions for Grant, GrantError, and every named public API from the package root; include a negative control deleting those exports. In the reference, either re-export cli.build_parser or make it private and remove it from cli.__all__.</item>
+    <item>Replace the offline-script token blacklist with execution in a network-disabled environment (R06:Test coverage; R08:Accepts alternatives). Comments mentioning curl should pass, while real network attempts through any library should be prevented. Preserve the existing positive alternative controls, baseline checks, damaged-fixture checks, and fast regression suite.</item>
+    <item>Improve realism by framing this as a PEP-inspired reusable library exercise, or place the feature in a repository/installer codebase that can actually use it (N01:Real-world relevance). Organize the dense instruction into explicit API contracts so semantic requirements are easy to distinguish from examples.</item>
+  </feedback_for_task_author>
 </task_quality_review>

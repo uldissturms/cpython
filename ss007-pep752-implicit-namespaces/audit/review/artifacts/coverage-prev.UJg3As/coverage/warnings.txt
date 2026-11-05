@@ -1,0 +1,3 @@
+entrypoint blind spot: tests shell out to 'python -m packagenamespaces' in a
+subprocess the stdlib trace module cannot follow, so __main__.py lines read 0
+even when the entrypoint test passes. Line-only backend: branch % n/a.
