@@ -141,14 +141,16 @@ only. Evidence: `build/.probe/1_pep752/{base,output}.json`.
   (the trial's self-consistent alternative encoding then fails
   requirements the instruction never stated).
 - `verify_offline.sh` is graded NEGATIVELY too: missing fixtures and
-  THREE damaged shapes (invalid `grants.json`, empty `projects.json`,
-  string-`grants` `second-index.json`) must exit nonzero WITHOUT the
-  success marker (a stub printing only the marker fails all). The
-  golden verifier now validates every fixture's shape up front
-  (it never touched `second["grants"]`, so the string sailed through
-  with exit 0). The existence pre-assert keeps both fail_to_pass (a
-  missing script fails, it does not pass by nonzero). Rejected
-  marker-only grading (the demonstrated stub).
+  FIVE damaged shapes (invalid `grants.json`, empty `projects.json`,
+  string-`grants` `second-index.json`, plus a `[123]` grants list and
+  a grant entry with no owner) must exit nonzero WITHOUT the success
+  marker (a stub printing only the marker fails all). The golden
+  verifier validates every fixture's shape AND every entry up front
+  (it once checked second-index `grants` only as a list, so `[123]`
+  sailed through with exit 0). The existence pre-assert keeps both
+  fail_to_pass (a missing script fails, it does not pass by
+  nonzero). Rejected marker-only grading (the demonstrated stub)
+  and list-typed-but-uninspected acceptance (the demonstrated gap).
 - Docs pin the `distribution.rst` backlink (the suite checked the new
   page but never its toctree entry), and the shell scripts pin
   network-freedom by scanning for network command/library words
@@ -238,20 +240,31 @@ only. Evidence: `build/.probe/1_pep752/{base,output}.json`.
 - Reward needs TWO data channels: the JUnit verdicts AND the
   independent probe (`tests/probe.py`, 39 checks over every graded
   surface, negatives included, specified behavior only). The probe
-  runs in a FRESH locked-down interpreter post-suite (absolute
-  repo-interpreter path, `-I -S`, cwd `/`, scrubbed env, script from
-  verifier-owned `/tests`) and never reads the report -- so the
-  in-process JUnit rewrite (an atexit hook suffices; replicated as
-  the `junit_forge` neg control: 441/441 forged PASSED) scores 1 on a
-  report-only grader and 0 once the probe joins (35 probe checks
-  fail; measured both). Missing/unparseable probe payload fails
-  closed. Rejected report-path obscurity (in-process code reads
+  SPLITS IN TWO: a child runs the checks in a FRESH locked-down
+  interpreter post-suite (absolute repo-interpreter path, `-I -S`,
+  cwd `/`, scrubbed env, script from verifier-owned `/tests`) and
+  prints one marked result line, while the parent -- which never
+  imports agent-controlled code -- demands exactly one well-formed
+  line on a zero exit and only then writes the verdict file, after
+  the child (and any shutdown hook it armed) is dead. The probe
+  never reads the report -- so the in-process JUnit rewrite (an
+  atexit hook suffices; replicated as the `junit_forge` neg
+  control: 441/441 forged PASSED) scores 1 on a report-only grader
+  and 0 once the probe joins (35 probe checks fail; measured both).
+  The two-channel rewrite (same hook plus a probe-payload
+  overwrite; replicated as `probe_forge`) scores 1 on the old
+  single-process probe and 0 now (measured both). Missing,
+  doubled, or malformed result lines, crashes, and timeouts all
+  fail closed. Rejected report-path obscurity (in-process code reads
   env/argv -- buys nothing), running the probe under system python
-  (agent code may use newer syntax than 3.12 parses), and trusting
-  the report alone (the measured hole). The residual that stays out
-  of model is a replaced `./python` binary faking BOTH channels --
-  inherent to artifact-carries-binary, same as before, now the ONLY
-  forgery route instead of one of two.
+  (agent code may use newer syntax than 3.12 parses), trusting the
+  report alone (the measured hole), and single-process verdict
+  writes (the measured hook route). Residuals out of model: a
+  replaced `./python` binary faking BOTH channels (inherent to
+  artifact-carries-binary), and a protocol-aware in-process stdout
+  forgery that reads the probe source at grading time -- defeating
+  the first needs binary attestation, the second needs a channel a
+  process can hide from its own code, and neither exists here.
 - Image delinks every symlink under /app into a copy at build time
   (79 -> 0, asserted fail-closed in the RUN). Separate-verifier
   staging refuses link-bearing trees; copies stage. Rejected
@@ -329,18 +342,25 @@ stdlib-names header while shipping the Lib tree) — closed by the
 registration + DESTDIR-install + runtime-membership tests: a tree
 that installs without the package fails three required ids.
 (9) In-process JUnit rewrite (atexit hook, unittest monkeypatch,
-patched regrtest) — CLOSEd this round: the reward needs the
+patched regrtest) — CLOSEd last round: the reward needs the
 independent probe too, which runs in a fresh locked-down interpreter
 and never reads the report; `junit_forge` proves the replicated
 attack (441/441 forged PASSED, 1 pre-fix) now scores 0 (35 probe
-checks fail). (10) Private-envelope persistence — CLOSEd this round:
+checks fail). (10) Private-envelope persistence — CLOSEd last round:
 the store schema is pinned in both directions by new tests and the
 probe; `store_spoof` proves the demonstrated bypass (1 pre-fix) now
-scores 0 (probe `cli.schema` fails). Out of threat model (inherent to
-SWE-bench, would read as TOO_EASY in calibration): replacing the
-`./python` binary (the artifact carries it) to fake BOTH channels --
-the only remaining forgery route. The separate verifier closes the
-cross-turn vectors (no /tests or /tmp/grade in the agent
+scores 0 (probe `cli.schema` fails). (11) Two-channel rewrite
+(shutdown hook overwriting the probe payload as well as the JUnit
+report) — CLOSEd this round: the probe's parent writes the verdict
+file after the armed child has exited, so the hook's overwrite is
+moot; `probe_forge` proves the replicated attack (450 forged ids +
+passed payload, 1 pre-fix) now scores 0 (genuine probe failures
+stand). Out of threat model (inherent to SWE-bench, would read as
+TOO_EASY in calibration): replacing the `./python` binary (the
+artifact carries it) to fake BOTH channels, and a protocol-aware
+in-process stdout forgery with early exit (no software-only channel
+a process runs can hide from its own code). The separate verifier
+closes the cross-turn vectors (no /tests or /tmp/grade in the agent
 container).
 
 Declined on merits (do not re-litigate): one-directional overlap;
@@ -586,3 +606,38 @@ dump/status_code). Re-armed the kind="instruction" redraw with a
 CHANGED redraw_reason (prior request consumed); no revise keys
 anywhere, all six tests jobs untouched. Verified valid JSON both
 files, +20 anchors, zero duplicates.
+- Round 8 (REVISION, pre-push beta REVISE with 7 findings): closed all
+  seven. R01/R02/R08 (spec): facts +4 lines (package-root re-exports
+  of every public symbol with the three graded root-only classes
+  named, bare-list list_namespaces, dump-only versioned envelope) +
+  5 anchors (the 4 new lines plus the unanchored
+  invalid-policy-namespaces fact the author kept dropping);
+  instruction redraw re-armed with a changed reason. The graded root
+  imports, exception subtype, and bare-list shape are spec now, so
+  submodule-only APIs, ValueError policy validation, and envelope
+  guesses are unreasonable readings. R02/R08 (HTML): contract frees
+  the href quote (single or double, same-quote open/close) and
+  replaces the exact-entity pins with unescape round-trips plus raw
+  absence; probe mirrors both. R06: contract + probe add
+  normalization-sensitive membership probes (mixed-case and
+  separator spellings for `in`/`covers` on both containers) and two
+  malformed second-index entry corruptions; no new test ids anywhere
+  this round (110 f2p + 340 p2p unchanged). R05/R07: probe splits
+  into a check child plus a verdict-writing parent that never
+  imports agent code (exactly-one marked line, zero exit, schema
+  check, every anomaly fail-closed); new `probe_forge` neg control
+  replicates the reviewer's two-channel shutdown-hook attack.
+  R12: golden verify_offline.sh validates every second-index entry
+  (dict with string name+owner) and every projects value; spliced
+  into steps solve.sh + config patch + task-level solve.sh (which
+  also picks up the round-7 fixes it missed), patch re-verified
+  applicable at base. Validated in containers of the task image:
+  oracle 450/450 reward 1 online AND --network=none with 39/39
+  probe; probe_forge 1 pre-fix (HEAD harness) / 0 post-fix with the
+  forged 450-id report confirmed moot; full run_controls green
+  (pos 1.0 x2, all 8 negs 0.0, twice 1.0,1.0). Preserved green:
+  every previously-green behavior still green; harness mirrors in
+  sync. Test-source and instruction re-authoring ride the next
+  AUTHOR_1P (4 contract slices changed, 0 id changes, instruction
+  redraw armed). Scratch under /home/uldis/cpython/.scratch/ss007-r8/
+  plus /tmp probe files, removed after the run.

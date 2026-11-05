@@ -1405,10 +1405,10 @@ index 0000000..d5ae0d4
 +echo "wrote fixtures to $OUTDIR"
 diff --git a/Tools/packagenamespaces/verify_offline.sh b/Tools/packagenamespaces/verify_offline.sh
 new file mode 100755
-index 0000000..28b425b
+index 0000000..fbcfc4c1166e0316abe5436520ac11580c733b64
 --- /dev/null
 +++ b/Tools/packagenamespaces/verify_offline.sh
-@@ -0,0 +1,155 @@
+@@ -0,0 +1,165 @@
 +#!/bin/bash
 +# Re-verify PEP 752 namespace fixtures with no network.
 +#
@@ -1494,8 +1494,18 @@ index 0000000..28b425b
 +    shape_fail("grandfathered.json holds no valid exemptions list")
 +second_grants = second.get("grants") if isinstance(second, dict) else None
 +second_projects = second.get("projects") if isinstance(second, dict) else None
-+if not isinstance(second_grants, list) or not isinstance(second_projects, dict):
-+    shape_fail("second-index.json holds no valid grants/projects shapes")
++if not isinstance(second_grants, list) or any(
++    not isinstance(entry, dict)
++    or not isinstance(entry.get("name"), str)
++    or not isinstance(entry.get("owner"), str)
++    for entry in second_grants
++):
++    shape_fail("second-index.json holds no valid grants list")
++if not isinstance(second_projects, dict) or any(
++    not isinstance(project, str) or not isinstance(owner, str)
++    for project, owner in second_projects.items()
++):
++    shape_fail("second-index.json holds no valid projects mapping")
 +
 +failures = []
 +

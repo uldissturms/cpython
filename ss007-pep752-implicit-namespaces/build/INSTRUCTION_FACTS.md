@@ -15,6 +15,8 @@ packagenamespaces.metadata
 packagenamespaces.policy
 packagenamespaces.cli
 Entry point: python -m packagenamespaces
+the package root re-exports every public symbol
+GrantStore, RepositoryIndex and SecurityPolicy import from the package root
 
 ## Naming (normalize)
 
@@ -157,6 +159,7 @@ grant removal sets project_detail namespaces to null
 /namespaces
 /namespace/<namespace>
 list_namespaces returns name mappings, sorted
+list_namespaces returns a bare sorted list of name mappings
 namespace_detail returns name, parent, children, owner
 namespace_detail normalizes its input
 namespace_detail raises UnknownGrantError when ungranted
@@ -223,6 +226,7 @@ grandfather records the project owner and exempts the project
 [{"name": "<namespace>", "owner": "<owner>"}]
 list --json prints name and owner entries
 bare dump prints the versioned namespace envelope
+the versioned api_version envelope belongs to bare dump only
 dump entries carry names only, from list_namespaces
 dump --project prints one project detail mapping
 reserved <namespace> for <owner>

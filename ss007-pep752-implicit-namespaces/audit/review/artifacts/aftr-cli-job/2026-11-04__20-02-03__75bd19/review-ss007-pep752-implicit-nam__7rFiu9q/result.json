@@ -1,0 +1,158 @@
+{
+    "id": "2de6ab0f-77f9-4f7b-834f-284ef2a39612",
+    "task_name": "codimango/agentic-review-ss007-pep752-implicit-namespaces",
+    "trial_name": "review-ss007-pep752-implicit-nam__7rFiu9q",
+    "trial_uri": "file:///tmp/lh-aftr.N5sIWw/agentic-review-cli-wq9yahuq/jobs/2026-11-04__20-02-03__75bd19/review-ss007-pep752-implicit-nam__7rFiu9q",
+    "task_id": {
+        "path": "review-ss007-pep752-implicit-namespaces"
+    },
+    "source": null,
+    "task_checksum": "84667c3c9e3161d2041cf82ef4f99545bb4cdc9905e19d7c53d846f8d661918d",
+    "config": {
+        "task": {
+            "path": "review-ss007-pep752-implicit-namespaces",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": null
+        },
+        "trial_name": "review-ss007-pep752-implicit-nam__7rFiu9q",
+        "trials_dir": "/tmp/lh-aftr.N5sIWw/agentic-review-cli-wq9yahuq/jobs/2026-11-04__20-02-03__75bd19",
+        "install_only": false,
+        "timeout_multiplier": 3.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": null,
+            "import_path": "aai.harbor.agents.codex:MetaCodex",
+            "model_name": "gpt-6.1-sol",
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": 14400.0,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [],
+            "kwargs": {},
+            "env": {
+                "NO_PROXY": "${CODIMANGO_AGENT_ENV_4E4F5F50524F5859}",
+                "no_proxy": "${CODIMANGO_AGENT_ENV_6E6F5F70726F7879}"
+            },
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": [
+                {
+                    "type": "bind",
+                    "source": "/tmp/lh-aftr.N5sIWw/agentic-review-cli-wq9yahuq/taskfiles",
+                    "target": "/app/taskfiles",
+                    "read_only": true
+                }
+            ],
+            "extra_docker_compose": [
+                "/tmp/lh-aftr.N5sIWw/agentic-review-cli-wq9yahuq/jobs/2026-11-04__20-02-03__75bd19/docker-compose-ai-gateway.yaml"
+            ],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "import_path": "aai.harbor.fork_verifier:ForkVerifier",
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "7f4a59dd-216d-4b02-9ebf-5e840bd57952",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "codex",
+        "version": "0.166.0",
+        "model_info": {
+            "name": "gpt-6.1-sol",
+            "provider": null
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 2726934,
+        "n_cache_tokens": 2575729,
+        "n_output_tokens": 20354,
+        "cost_usd": 0.7635229000000001,
+        "model_usage": null,
+        "rollout_details": null,
+        "metadata": null
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 1.0
+        }
+    },
+    "verifier_environment_mode": "shared",
+    "exception_info": null,
+    "started_at": "2026-11-05T04:02:05.421884Z",
+    "finished_at": "2026-11-05T04:08:44.838610Z",
+    "environment_setup": {
+        "started_at": "2026-11-05T04:02:05.453448Z",
+        "finished_at": "2026-11-05T04:02:16.283552Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-11-05T04:02:16.283629Z",
+        "finished_at": "2026-11-05T04:02:40.495816Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-11-05T04:02:40.496023Z",
+        "finished_at": "2026-11-05T04:08:25.577968Z"
+    },
+    "verifier": {
+        "started_at": "2026-11-05T04:08:29.771872Z",
+        "finished_at": "2026-11-05T04:08:31.102919Z"
+    },
+    "step_results": null,
+    "failure_mode": "NONE",
+    "n_tool_calls": 26,
+    "context_tokens": {
+        "peak_prompt_tokens": 151127,
+        "final_turn_prompt_tokens": 151127,
+        "prompt_drops": null,
+        "source": "last_token_usage",
+        "steps_measured": 1
+    },
+    "logging_metadata": {
+        "infra_retries_used": 0,
+        "is_infra_retry": false
+    },
+    "verifier_output_capture": [
+        {
+            "step": null,
+            "verifier": {
+                "status": "shared",
+                "error": null
+            },
+            "artifacts": {
+                "status": "shared",
+                "error": null
+            }
+        }
+    ]
+}

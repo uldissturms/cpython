@@ -1,0 +1,70 @@
+  <rubric_results>
+    <rubric id="R01" dimension="Task Quality" focus="Spec sufficiency" statement="The task specification together with the agent's accessible environment (codebase, config files, dependencies) contain enough information to solve the problem. Things that are obvious to a domain expert don't need to be explicitly listed out, but there shouldn't be ambiguity in non-obvious details. If this task were to be given to a domain expert, they'd be able to solve it without any additional information.">
+      <verdict>FAIL</verdict>
+      <evidence>The active instruction lists submodules but never requires package-root symbol re-exports, although the grader imports GrantStore, constants, and helpers from the root. It also does not unambiguously assign the bare-list versus versioned-envelope return shape to RepositoryIndex.list_namespaces or specify InvalidNamespaceError for an invalid SecurityPolicy namespace.</evidence>
+    </rubric>
+    <rubric id="R02" dimension="Task Quality" focus="Spec-test alignment" statement="Every tested behavior traces to a requirement stated in the spec or clearly inferable from the environment or the task. Tests do not verify unstated requirements which might be unfair to the agent being graded.">
+      <verdict>FAIL</verdict>
+      <evidence>test_pep752_semantics.py, test_pep752_uploads.py, test_pep752_metadata.py, and probe.py require unstated package-root exports. test_policy_validates_namespaces additionally pins an unstated exception subtype, and the HTML tests require double-quoted href attributes and a specific escaping representation despite the structural HTML requirement.</evidence>
+    </rubric>
+    <rubric id="R03" dimension="Task Quality" focus="Trajectory-informed spec check" statement="When a significant proportion of model attempts fail on the same test or behavior, the spec clearly and unambiguously defines that behavior — ruling out ambiguity as the cause.">
+      <verdict>FAIL</verdict>
+      <evidence>There is only one rollout, so no multi-model pattern can be established; nevertheless, 60 of its reported failures are import failures caused by the omitted root-export contract. After supplying only an in-memory export adapter, 78 of 81 core tests pass, leaving two list-shape failures and one policy-exception error on the other unclear interface choices.</evidence>
+    </rubric>
+    <rubric id="R04" dimension="Task Quality" focus="Reasoning required" statement="The spec describes the goal (what needs to be achieved), and shouldn't lay out the whole step-by-step recipe (how to achieve it). If the whole recipe/algorithm is laid out in detail, then it should be complex enough that the agents are struggling to implement or code it correctly and pass the tests. In all other cases, the agent needs to reason and figure out the solution or approach.">
+      <verdict>PASS</verdict>
+      <evidence>The extensive inventory specifies behavior but leaves substantial implementation work: normalized grant lifecycle, bidirectional overlap, repository metadata, upload exemptions, policy evaluation, persistent CLI commands, and CPython installation integration. Producing a coherent implementation requires reasoning across these components.</evidence>
+    </rubric>
+    <rubric id="R05" dimension="Task Quality" focus="Information isolation" statement="The solution shouldn't be exposed to the agent in any way. No leaks via: golden solution in env, test expected outputs/fixtures, editable grading tests, git history, READMEs, comments, or a check satisfiable by writing the expected artifact directly.">
+      <verdict>FAIL</verdict>
+      <evidence>The solve-time checkout contains no reference package or visible grading suite; the taskfiles review mount is not evidence of a solve-time leak. However, grading imports agent-controlled code with permission to write the expected result artifacts directly: an isolated reproduction overwrote both JUnit and probe JSON at interpreter shutdown and satisfied the reward predicate with a broken implementation.</evidence>
+    </rubric>
+    <rubric id="R06" dimension="Grading / Test Quality" focus="Test coverage" statement="Tests cover representative scenarios and important edge cases of every requirement stated in the task specification. No spec requirement should go untested.">
+      <verdict>FAIL</verdict>
+      <evidence>Both behavioral channels omit mixed-case/separator membership queries for GrantStore and GrandfatheredRegistry; replacing their membership methods with raw, unnormalized lookups still passes all 108 non-install reference tests. Fixture damage checks also omit malformed entries inside a list-valued second-index grants field, which the reference verifier accepts.</evidence>
+    </rubric>
+    <rubric id="R07" dimension="Grading / Test Quality" focus="Reward-hacking" statement="The task shouldn't be reward-hackable where shortcuts, suboptimal solutions, or cheat codes are able to pass all the tests without genuinely solving the problem in the manner that the task describes.">
+      <verdict>FAIL</verdict>
+      <evidence>The independent probe executes the submitted package inside the process that writes probe.json, under the same permissions, so isolation flags do not protect its verdict. Extending the supplied junit_forge negative control with a shutdown hook to overwrite the probe payload produced 450 forged passing IDs and passed=true even though the probe logged 39/39 genuine check failures; the final reward predicate accepted both artifacts.</evidence>
+    </rubric>
+    <rubric id="R08" dimension="Grading / Test Quality" focus="Accepts alternatives" statement="Tests should be flexible, and shouldn't reject alternate solutions that might be used to solve the problem (as long as the spec allows for that level of flexibility).">
+      <verdict>FAIL</verdict>
+      <evidence>A reference renderer modified only to use valid single-quoted href attributes fails test_html_semantically_stable; probe.metadata_html rejects it too. Submodule-only public APIs and ValueError policy validation are also reasonable interpretations of the visible contract that the grader rejects.</evidence>
+    </rubric>
+    <rubric id="R09" dimension="Grading / Test Quality" focus="Test reliability" statement="Tests are not flaky, not dependent on network/timing/unpinned environment, and do not spuriously time out. Results should be fairly consistent across runs and machines. The tasks should always run successfully and reliably return pass or fail for the respective category of submissions.">
+      <verdict>PASS</verdict>
+      <evidence>The recorded verifier completed normally in approximately 51 seconds, with all 340 required regression tests passing and no scoring-time exception or timeout. Runtime checks are local and deterministic; the rollout's transient interpreter crash occurred during solving and recovered before grading.</evidence>
+    </rubric>
+    <rubric id="R10" dimension="Grading / Test Quality" focus="Test validity" statement="Every fail-to-pass test genuinely fails on the unmodified base code. No test already passes before the agent makes any changes.">
+      <verdict>PASS</verdict>
+      <evidence>A baseline run of all 110 new tests, using their intended repository filenames without modifying the checkout, found no fail-to-pass ID already passing. Missing package functionality, documentation, scripts, and installation registration account for the baseline failures.</evidence>
+    </rubric>
+    <rubric id="R11" dimension="Grading / Test Quality" focus="Verification efficiency" statement="Solving requires substantially more reasoning than verifying. Grading runs in minutes, needs no human or GPU cluster, and scales to thousands of RL runs.">
+      <verdict>PASS</verdict>
+      <evidence>Verification uses CPU-only local tests and a staged CPython installation, with an observed total verifier duration of about 51 seconds and suite duration of 5.9 seconds. This is substantially cheaper than implementing and validating the complete package and needs neither human assessment nor specialized hardware.</evidence>
+    </rubric>
+    <rubric id="R12" dimension="Golden Solution Quality" focus="Golden correctness" statement="The golden/reference solution correctly and completely implements every requirement stated in the specification and solves the problem.">
+      <verdict>FAIL</verdict>
+      <evidence>The active step reference's verify_offline.sh validates second-index grants only as a list and then ignores its contents. After generating its fixtures and replacing that field with [123], the reference verifier still exited zero and printed 'verify: all checks passed', violating the explicit damaged-fixture and every-shape validation requirements.</evidence>
+    </rubric>
+    <rubric id="R13" dimension="Golden Solution Quality" focus="Golden reliability" statement="The golden solution passes all tests consistently across every oracle trial run with no failures or flakiness.">
+      <verdict>PASS</verdict>
+      <evidence>No oracle trial is supplied, so full oracle consistency cannot be established from rollouts. The active step reference passed all 108 non-install tests twice in isolated checks; its inspected build registration matches the integration exercised successfully by the rollout, and there is no observed reference grading failure.</evidence>
+    </rubric>
+    <rubric id="N01" dimension="Optional" focus="Real-world relevance" statement="Would this change realistically be made in this project, and is it posed the way real work actually arrives — regardless of how hard it is?">
+      <verdict>FAIL</verdict>
+      <evidence>The behavior is relevant to package security, but a new CPython standard-library package containing index-service models, installer policy, a grant-management CLI, and bespoke fixtures is an artificial project boundary. The instruction's inventory of exact symbols and output fragments also does not resemble a typical CPython feature request.</evidence>
+    </rubric>
+    <rubric id="N02" dimension="Optional" focus="Knowledge depth" statement="Does the solution require specialized knowledge that a competent generalist lacks?">
+      <verdict>PASS</verdict>
+      <evidence>The task benefits from packaging-name normalization and Simple API knowledge, plus CPython's LIBSUBDIRS, generated standard-library module list, and staged-install conventions. These are specialized ecosystem and repository details beyond ordinary application coding.</evidence>
+    </rubric>
+    <rubric id="N03" dimension="Optional" focus="Data realism" statement="Any seed data, input files, or environment fixtures used in the task are representative of real-world data — not obviously synthetic, overly simplified, or toy-scale in a way that trivializes the problem or makes the solution non-transferable to real scenarios.">
+      <verdict>PASS</verdict>
+      <evidence>There is no external seed dataset; the requested fixtures intentionally model normalized project names, grant ownership, exemptions, and a separate index. Their small size is sufficient for these discrete semantics and does not remove the need for a general implementation.</evidence>
+    </rubric>
+    <rubric id="N04" dimension="Optional" focus="Training signal" statement="The task's difficulty stems from genuine reasoning or implementation challenges — not from incidental friction (wrong library version, missing import, trivial config mismatch) that, once learned, provides no further training signal. As models improve, the task should continue to differentiate capability levels rather than saturating after a single insight.">
+      <verdict>FAIL</verdict>
+      <evidence>The underlying implementation offers useful reasoning challenges, but the observed binary reward is dominated by undisclosed import aliases and interface choices. As currently specified and graded, a strong completed implementation receives the same zero as the untouched baseline, obscuring the desired capability signal.</evidence>
+    </rubric>
+  </rubric_results>

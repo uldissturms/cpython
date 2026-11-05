@@ -20,3 +20,15 @@ persisted-schema, distribution-backlink, network-free and damaged-fixture
 coverage; fixes the golden empty-owner and second-index behaviors; closes
 the in-process JUnit-rewrite route with the probe. 110 fail_to_pass (9 new
 ids authored by AUTHOR_1P next) + 340 pass_to_pass.
+
+Round 8 (REVISION): states the package-root re-exports, the bare-list
+`list_namespaces` shape versus the dump-only versioned envelope, and the
+`InvalidNamespaceError` policy pin in the instruction (via 4 new facts + 5
+anchors, redraw re-armed); strengthens 4 contract sections with
+normalization-sensitive membership probes, quote-tolerant HTML matching,
+representation-free escaping checks, and malformed second-index entry
+damage (no new test ids); splits the probe into a check child plus a
+verdict-writing parent that never imports agent code, closing the
+shutdown-hook rewrite of the probe payload; fixes the golden offline
+verifier to validate every second-index entry. 110 fail_to_pass + 340
+pass_to_pass, ids unchanged.

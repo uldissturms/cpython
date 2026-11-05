@@ -1,3 +1,5 @@
+import html
+import re
 import unittest
 
 try:
@@ -194,15 +196,24 @@ class MetadataTests(unittest.TestCase):
     def test_html_escapes_special_characters(self):
         self.require_impl()
         index = RepositoryIndex()
+        filename = 'a<b>&"c.tar.gz'
+        url = "https://example.com/a?first=1&second=2"
         page = index.simple_html(
             "demo",
             [{
-                "filename": 'a<b>&"c.tar.gz',
-                "url": "https://example.com/a?first=1&second=2",
+                "filename": filename,
+                "url": url,
             }],
         )
-        self.assertIn("a&lt;b&gt;&amp;&quot;c.tar.gz", page)
-        self.assertIn("https://example.com/a?first=1&amp;second=2", page)
+        anchor = re.search(
+            r"""<a\b[^>]*href=(["'])([\s\S]*?)\1[^>]*>([\s\S]*?)</a>""",
+            page,
+        )
+        self.assertIsNotNone(anchor)
+        self.assertEqual(len(re.findall(r"<a\b", page)), 1)
+        self.assertEqual(html.unescape(anchor.group(2)), url)
+        self.assertEqual(html.unescape(anchor.group(3)), filename)
+        self.assertNotIn(filename, page)
         self.assertNotIn("<b>", page)
 
     def test_html_carries_no_namespace_keys(self):
@@ -242,12 +253,12 @@ class MetadataTests(unittest.TestCase):
                 self.assertRegex(page, rf"(?i)<{tag}\b[^>]*>")
         for tag in ("title", "h1"):
             with self.subTest(tag=tag):
-                self.assertRegex(
+                element = re.search(
+                    rf"(?i)<{tag}\b[^>]*>([\s\S]*?)</{tag}\s*>",
                     page,
-                    rf"(?i:<{tag}\b[^>]*>)"
-                    rf"(?:(?!(?i:</{tag}\s*>))[\s\S])*?demo"
-                    rf"[\s\S]*?(?i:</{tag}\s*>)",
                 )
+                self.assertIsNotNone(element)
+                self.assertIn("demo", element.group(1))
         anchors = []
         for file in files:
             escaped = {}
@@ -257,11 +268,15 @@ class MetadataTests(unittest.TestCase):
                     for char in file[key]
                 )
             anchors.append(
-                rf'<a\b[^>]*href="{escaped["url"]}"[^>]*>'
+                rf"""<a\b[^>]*href=(["']){escaped["url"]}\1[^>]*>"""
                 rf'{escaped["filename"]}</a>'
             )
-        self.assertRegex(page, r"[\s\S]*?".join(anchors))
-        self.assertNotRegex(page, r"<a\b[\s\S]*<a\b[\s\S]*<a\b")
+        position = 0
+        for anchor in anchors:
+            match = re.compile(anchor).search(page, position)
+            self.assertIsNotNone(match)
+            position = match.end()
+        self.assertEqual(len(re.findall(r"<a\b", page)), 2)
 
 
 if __name__ == "__main__":

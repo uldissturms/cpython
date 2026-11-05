@@ -84,9 +84,14 @@ GrantStoreTests (fresh `GrantStore()` per test unless noted):
 - `test.test_pep752_semantics.GrantStoreTests.test_reserve_and_get`:
   `reserve("acme","acme-corp")` returns a grant with that name/owner;
   `get("acme")` equals it; `"acme" in store`; `len(store)==1`;
-  `get("other")` is None.
+  `get("other")` is None. Membership normalizes its query: `"Acme"`
+  and `"ACME"` are also `in` the store (a raw unnormalized lookup
+  fails these), while `"other"` is not.
 - `test.test_pep752_semantics.GrantStoreTests.test_reserve_normalizes`:
-  `reserve("Acme.Widgets","acme-corp").name=="acme-widgets"`.
+  `reserve("Acme.Widgets","acme-corp").name=="acme-widgets"`, and the
+  grant answers every spelling of its name: `"acme-widgets"`,
+  `"Acme.Widgets"`, `"ACME_WIDGETS"` and `"acme.widgets"` are all
+  `in` the store.
 - `test.test_pep752_semantics.GrantStoreTests.test_reserve_rejects_invalid`:
   `"", "-foo", "foo-", "foo!", "foo bar", "foo\n"` raise
   `InvalidNamespaceError`.
@@ -185,7 +190,11 @@ imports of `GrantStore`, `CONFLICT_STATUS`, `GrandfatheredRegistry`,
 - `test.test_pep752_uploads.UploadTests.test_grandfathered_registry_tracks_projects`:
   `add("Acme.Legacy")`; `covers("acme-legacy")`; `"acme-legacy" in
   registry`; `projects()==["acme-legacy"]`; `len==1`;
-  `discard` clears coverage.
+  `discard` clears coverage. Both membership probes normalize their
+  query: `covers("Acme.Legacy")` and `covers("ACME_LEGACY")` hold,
+  as do `"Acme.Legacy" in registry` and `"acme.legacy" in
+  registry` (a raw unnormalized lookup fails these); after
+  `discard("acme-legacy")`, `covers("ACME-LEGACY")` is false too.
 - `test.test_pep752_uploads.UploadTests.test_nongrandfathered_stranger_denied`:
   registry holding only `"acme-legacy"`;
   `authorize_upload("acme-other","mallory",store,...)` raises.
@@ -269,14 +278,22 @@ builds an index with `"acme"` and `"acme-widgets"` granted to
   then assert `demo` is a substring; the reference `Links for demo`
   passes, and so does any other wording that names the project). In
   file order, one anchor per file whose `href` equals the file url and
-  whose text equals the filename (match each with
-  `<a\b[^>]*href="..."[^>]*>...</a>`, url and filename regex-escaped;
+  whose text equals the filename (match each with a QUOTE-TOLERANT
+  pattern -- `<a\b[^>]*href=(["'])<url>\1[^>]*><text></a>`, url and
+  filename regex-escaped, the same quote opening and closing the
+  value -- so single- and double-quoted `href` spellings both pass;
   exactly two anchors, no third `<a\b`). It must hold neither
   `"namespace"` nor `"namespaces"`, and two renders of equal inputs
   must be byte-equal (deterministic).
 - `test.test_pep752_metadata.MetadataTests.test_html_escapes_special_characters`:
-  filename `a<b>&"c.tar.gz` renders escaped, url query `&` renders
-  `&amp;`, and no literal `<b>` survives.
+  filename `a<b>&"c.tar.gz` with url
+  `https://example.com/a?first=1&second=2` renders escaped WITHOUT
+  pinning the entity spelling: extract the one anchor with the same
+  quote-tolerant pattern, `html.unescape` its `href` and text, and
+  compare to the original url and filename; the raw filename never
+  appears literally and no literal `<b>` survives. (The old pin on
+  the exact `&lt;`/`&gt;`/`&amp;`/`&quot;` bytes rejected equivalent
+  numeric-entity renderers.)
 
 ## test_pep752_policy — PolicyTests (packagenamespaces.policy)
 
@@ -426,11 +443,17 @@ the `Tools/packagenamespaces/` scripts. `DocsTests` reads doc files.
   is absent from its stdout.
 - `test.test_pep752_tooling.HarnessTests.test_verify_offline_rejects_damaged_fixtures`:
   fails unless both scripts exist; generates fixtures, then corrupts
-  them three ways -- `grants.json` replaced by `{not valid json`,
-  `projects.json` replaced by `{}`, and `second-index.json` replaced
+  them five ways -- `grants.json` replaced by `{not valid json`,
+  `projects.json` replaced by `{}`, `second-index.json` replaced
   by `{"grants": "acme", "projects": {"x": "y"}}` (grants no longer
-  an array) -- and each corrupted tree makes `verify_offline.sh` exit
-  nonzero with `verify: all checks passed` absent from its stdout.
+  an array), `second-index.json` replaced by
+  `{"grants": [123], "projects": {"x": "y"}}` (a list whose entry
+  is no grant mapping), and `second-index.json` replaced by
+  `{"grants": [{"name": "acme"}], "projects": {"x": "y"}}` (an
+  entry with no owner) -- and each corrupted tree makes
+  `verify_offline.sh` exit nonzero with `verify: all checks passed`
+  absent from its stdout. A verifier that checks only that
+  second-index `grants` is a list fails the last two.
 - `test.test_pep752_tooling.HarnessTests.test_scripts_use_no_network`:
   neither `gen_fixtures.sh` nor `verify_offline.sh` names a network
   primitive: the words `curl`, `wget`, `ssh`, `scp`, `sftp`, `ftp`,

@@ -14,13 +14,26 @@ written inside the same container -- and the same process -- as agent code:
 the agent-owned interpreter runs the regrtest process, and the agent's own
 package is imported into it. In-process code can therefore rewrite the
 report after a genuine failing run (an atexit hook suffices) and a
-report-only grader scores reward 1. This probe closes that route: it runs
-in a FRESH locked-down interpreter (absolute path, ``-I -S``, neutral cwd,
+report-only grader scores reward 1. This probe closes that route: it
+re-checks the specified behaviors directly -- including negative cases --
+and NEVER reads the JUnit report. The reward requires this probe AND every
+required suite id, so a forged report alone can no longer score.
+
+WHY TWO PROCESSES
+
+An earlier single-process probe imported the submitted package in the same
+process that wrote its verdict file, so a shutdown hook inside the package
+could overwrite the genuine payload afterwards and the reward accepted the
+forgery. This probe therefore splits in two: the CHILD runs in a fresh
+locked-down interpreter (absolute repo path, ``-I -S``, neutral cwd,
 scrubbed environment, script from the verifier-owned ``/tests`` tree),
-imports only the implementation under test, asserts the specified behaviors
-directly -- including negative cases -- and NEVER reads the JUnit report.
-The reward requires this probe AND every required suite id, so a forged
-report alone can no longer score.
+imports only the implementation under test, and prints its verdict as one
+marked line on stdout; the PARENT never imports agent-controlled code --
+it spawns the child, demands exactly one well-formed result line on a zero
+exit, and only then writes the verdict file, after the child (and any hook
+it armed) is dead. Anything the child writes to the verdict path is moot:
+the parent overwrites it last. Every anomaly -- crash, timeout, missing or
+doubled result line, malformed payload -- fails closed.
 
 The probe pins specified behavior only (the same contract the graded suite
 is authored from), never reference-implementation internals, so any correct
@@ -29,6 +42,7 @@ alternate implementation passes it.
 
 import contextlib
 import glob
+import html
 import io
 import json
 import os
@@ -37,40 +51,55 @@ import subprocess
 import sys
 import tempfile
 
-try:
-    from packagenamespaces import (
-        API_VERSION,
-        CONFLICT_EXIT,
-        CONFLICT_STATUS,
-        DEFAULT_DEPTH_LIMIT,
-        LEGACY_API_VERSION,
-        GrantStore,
-        RepositoryIndex,
-        SecurityPolicy,
-        UploadConflictError,
-        authorize_upload,
-        grants_overlap,
-        hyphen_depth,
-        is_valid_namespace,
-        namespace_matches,
-        normalize_name,
-    )
-    from packagenamespaces.cli import main as cli_main
-    from packagenamespaces.grants import (
-        DepthLimitError,
-        InvalidNamespaceError,
-        OverlapError,
-        UnknownGrantError,
-    )
-    from packagenamespaces.metadata import NotSupportedError
-    from packagenamespaces.uploads import GrandfatheredRegistry
-except Exception as exc:  # Base tree or broken package: fail closed below.
-    _IMPORT_ERROR = exc
+# The child prints its verdict as one line starting with this marker; the
+# parent accepts exactly one such line. Genuine implementation code never
+# prints it; extra copies fail closed.
+MARKER = "LAMBO_PROBE_PAYLOAD "
+
+_CHILD_MODE = len(sys.argv) > 1 and sys.argv[1] == "--child"
+
+if _CHILD_MODE:
+    try:
+        from packagenamespaces import (
+            API_VERSION,
+            CONFLICT_EXIT,
+            CONFLICT_STATUS,
+            DEFAULT_DEPTH_LIMIT,
+            LEGACY_API_VERSION,
+            GrantStore,
+            RepositoryIndex,
+            SecurityPolicy,
+            UploadConflictError,
+            authorize_upload,
+            grants_overlap,
+            hyphen_depth,
+            is_valid_namespace,
+            namespace_matches,
+            normalize_name,
+        )
+        from packagenamespaces.cli import main as cli_main
+        from packagenamespaces.grants import (
+            DepthLimitError,
+            InvalidNamespaceError,
+            OverlapError,
+            UnknownGrantError,
+        )
+        from packagenamespaces.metadata import NotSupportedError
+        from packagenamespaces.uploads import GrandfatheredRegistry
+    except Exception as exc:  # Base tree or broken package: fail closed.
+        _IMPORT_ERROR = exc
+    else:
+        _IMPORT_ERROR = None
 else:
+    # Parent mode: agent-controlled code is never imported here. The check
+    # functions below are defined but never called in this process.
     _IMPORT_ERROR = None
 
 
-REPO_ROOT = sys.argv[1] if len(sys.argv) > 1 else "/app"
+if _CHILD_MODE:
+    REPO_ROOT = sys.argv[2] if len(sys.argv) > 2 else "/app"
+else:
+    REPO_ROOT = sys.argv[1] if len(sys.argv) > 1 else "/app"
 REPO_PYTHON = os.path.join(REPO_ROOT, "python")
 DESTDIR = "/tmp/lambo-destdir"
 
@@ -180,6 +209,15 @@ def grants_lifecycle():
     assert len(store) == 1
     assert store.get("other") is None
     assert store.reserve("Acme.Widgets", "acme-corp").name == "acme-widgets"
+    # Membership normalizes its query: every spelling of a granted name
+    # answers, and only granted names do.
+    assert "Acme" in store
+    assert "ACME" in store
+    assert "other" not in store
+    assert "acme-widgets" in store
+    assert "Acme.Widgets" in store
+    assert "ACME_WIDGETS" in store
+    assert "acme.widgets" in store
 
 
 def grants_rejects_bad_names_and_owners():
@@ -329,12 +367,18 @@ def uploads_grandfathered():
     assert "acme-legacy" in registry
     assert registry.projects() == ["acme-legacy"]
     assert len(registry) == 1
+    # Both membership probes normalize their query.
+    assert registry.covers("Acme.Legacy") is True
+    assert registry.covers("ACME_LEGACY") is True
+    assert "Acme.Legacy" in registry
+    assert "acme.legacy" in registry
     assert authorize_upload("acme-legacy", "mallory", store,
                             grandfathered=registry) is True
     expect_raises(UploadConflictError, authorize_upload,
                   "acme-other", "mallory", store, grandfathered=registry)
     registry.discard("acme-legacy")
     assert registry.covers("acme-legacy") is False
+    assert registry.covers("ACME-LEGACY") is False
 
 
 def uploads_rejects_empty_owner():
@@ -451,16 +495,24 @@ def metadata_html():
         match = re.search(rf"(?i)<{tag}\b[^>]*>([\s\S]*?)</{tag}\s*>", page)
         assert match, tag
         assert "demo" in match.group(1), tag
+    # Quote-tolerant: single- and double-quoted href spellings both pass.
     anchors = re.findall(
-        r'<a\b[^>]*href="([^"]*)"[^>]*>(.*?)</a>', page)
-    assert anchors == [(entry["url"], entry["filename"])
-                       for entry in files]
+        r'<a\b[^>]*href=(["\'])(.*?)\1[^>]*>(.*?)</a>', page)
+    assert [(url, text) for _, url, text in anchors] == [
+        (entry["url"], entry["filename"]) for entry in files]
     tricky = index.simple_html("demo", [{
         "filename": 'a<b>&"c.tar.gz',
         "url": "https://example.com/a?first=1&second=2",
     }])
-    assert "a&lt;b&gt;&amp;&quot;c.tar.gz" in tricky
-    assert "https://example.com/a?first=1&amp;second=2" in tricky
+    # Escaping without pinning the entity spelling: the anchor
+    # round-trips through html.unescape while the raw bytes never appear.
+    found = re.findall(
+        r'<a\b[^>]*href=(["\'])(.*?)\1[^>]*>(.*?)</a>', tricky)
+    assert len(found) == 1
+    _, href, text = found[0]
+    assert html.unescape(href) == "https://example.com/a?first=1&second=2"
+    assert html.unescape(text) == 'a<b>&"c.tar.gz'
+    assert 'a<b>&"c.tar.gz' not in tricky
     assert "<b>" not in tricky
 
 
@@ -739,6 +791,11 @@ def harness_verify_rejects_bad_fixtures():
         ("projects.json", "{}"),
         ("second-index.json",
          json.dumps({"grants": "acme", "projects": {"x": "y"}})),
+        ("second-index.json",
+         json.dumps({"grants": [123], "projects": {"x": "y"}})),
+        ("second-index.json",
+         json.dumps({"grants": [{"name": "acme"}],
+                     "projects": {"x": "y"}})),
     ]
     for filename, replacement in corruptions:
         with tempfile.TemporaryDirectory() as directory:
@@ -863,11 +920,11 @@ CHECKS = [
 ]
 
 
-def main(argv):
+def _child_main(argv):
+    """Run every check and print the verdict as one marked stdout line."""
     if len(argv) != 3:
-        sys.stderr.write("usage: probe.py <repo-root> <output-json>\n")
+        sys.stderr.write("usage: probe.py --child <repo-root>\n")
         return 2
-    output_path = argv[2]
     for name, func in CHECKS:
         check(name, func)
     payload = {
@@ -875,13 +932,8 @@ def main(argv):
         "failed": sorted(_FAILURES),
         "checks": len(CHECKS),
     }
-    try:
-        with open(output_path, "w", encoding="utf-8") as handle:
-            json.dump(payload, handle, indent=2, sort_keys=True)
-            handle.write("\n")
-    except OSError as exc:
-        sys.stderr.write(f"probe: cannot write {output_path}: {exc}\n")
-        return 2
+    sys.stdout.write(MARKER + json.dumps(payload, sort_keys=True) + "\n")
+    sys.stdout.flush()
     if _FAILURES:
         sys.stderr.write(
             f"probe: {len(_FAILURES)}/{len(CHECKS)} checks failed\n")
@@ -892,17 +944,110 @@ def main(argv):
     return 0
 
 
+def _parent_main(argv):
+    """Spawn the child, validate its one result line, write the verdict.
+
+    This process never imports agent-controlled code. The verdict file is
+    written only here, after the child has exited, so a shutdown hook the
+    child armed cannot rewrite it afterwards: anything it wrote is moot.
+    """
+    if len(argv) != 3:
+        sys.stderr.write("usage: probe.py <repo-root> <output-json>\n")
+        return 2
+    repo_root, output_path = argv[1], argv[2]
+
+    def fail_closed(reason):
+        payload = {"passed": False, "failed": [reason],
+                   "checks": len(CHECKS)}
+        try:
+            with open(output_path, "w", encoding="utf-8") as handle:
+                json.dump(payload, handle, indent=2, sort_keys=True)
+                handle.write("\n")
+        except OSError as exc:
+            sys.stderr.write(f"probe: cannot write {output_path}: {exc}\n")
+            return 2
+        sys.stderr.write(f"probe: FAIL {reason}\n")
+        return 0
+
+    try:
+        proc = subprocess.run(
+            [os.path.join(repo_root, "python"), "-I", "-S",
+             os.path.abspath(__file__), "--child", repo_root],
+            capture_output=True, text=True, cwd="/", timeout=900,
+            stdin=subprocess.DEVNULL, close_fds=True,
+            env={"PATH": "/usr/bin:/bin", "PYTHONSAFEPATH": "1"},
+        )
+    except subprocess.TimeoutExpired:
+        return fail_closed("probe: check process timed out")
+    except Exception as exc:  # Missing binary, decode failure, ...
+        return fail_closed(f"probe: cannot run check process: {exc!r}")
+    if proc.stderr:
+        sys.stderr.write(proc.stderr)
+    if proc.returncode != 0:
+        return fail_closed(
+            f"probe: check process exited {proc.returncode}")
+    lines = [line for line in proc.stdout.splitlines()
+             if line.startswith(MARKER)]
+    if len(lines) != 1:
+        return fail_closed(
+            f"probe: expected 1 result line, saw {len(lines)}")
+    try:
+        payload = json.loads(lines[0][len(MARKER):])
+    except ValueError as exc:
+        return fail_closed(f"probe: result line is not JSON: {exc}")
+    if (not isinstance(payload, dict)
+            or payload.get("checks") != len(CHECKS)
+            or not isinstance(payload.get("passed"), bool)
+            or not isinstance(payload.get("failed"), list)
+            or not all(isinstance(entry, str)
+                       for entry in payload["failed"])):
+        return fail_closed("probe: result line has a bad shape")
+    try:
+        with open(output_path, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+    except OSError as exc:
+        sys.stderr.write(f"probe: cannot write {output_path}: {exc}\n")
+        return 2
+    if payload["passed"]:
+        sys.stderr.write(f"probe: all {len(CHECKS)} checks passed\n")
+    else:
+        sys.stderr.write(
+            f"probe: {len(payload['failed'])}/{len(CHECKS)} checks failed\n")
+        for failure in sorted(payload["failed"]):
+            sys.stderr.write(f"probe: FAIL {failure}\n")
+    return 0
+
+
+def main(argv):
+    if len(argv) > 1 and argv[1] == "--child":
+        return _child_main(argv)
+    return _parent_main(argv)
+
+
 if __name__ == "__main__":
     try:
         exit_code = main(sys.argv)
     except BaseException as exc:  # Fail closed, always with a payload.
-        try:
-            with open(sys.argv[2], "w", encoding="utf-8") as handle:
-                json.dump({"passed": False, "failed": [f"probe: {exc!r}"],
-                           "checks": len(CHECKS)}, handle)
-        except Exception:
-            pass
-        sys.stderr.write(f"probe: fatal: {exc!r}\n")
-        exit_code = 0
+        if _CHILD_MODE:
+            try:
+                sys.stdout.write(MARKER + json.dumps(
+                    {"passed": False, "failed": [f"probe: {exc!r}"],
+                     "checks": len(CHECKS)}, sort_keys=True) + "\n")
+                sys.stdout.flush()
+            except Exception:
+                pass
+            sys.stderr.write(f"probe: fatal: {exc!r}\n")
+            exit_code = 0
+        else:
+            try:
+                with open(sys.argv[2], "w", encoding="utf-8") as handle:
+                    json.dump({"passed": False,
+                               "failed": [f"probe: {exc!r}"],
+                               "checks": len(CHECKS)}, handle)
+            except Exception:
+                pass
+            sys.stderr.write(f"probe: fatal: {exc!r}\n")
+            exit_code = 0
     sys.exit(exit_code)
 

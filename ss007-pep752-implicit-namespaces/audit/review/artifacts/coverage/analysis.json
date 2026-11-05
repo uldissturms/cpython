@@ -2,8 +2,8 @@
   "mode": "diff",
   "threshold": 80.0,
   "overall": {
-    "lines_scope": 543,
-    "lines_covered": 519,
+    "lines_scope": 545,
+    "lines_covered": 521,
     "raw_pct": 95.6,
     "branches": 0,
     "branches_covered": 0,
@@ -118,9 +118,9 @@
     },
     {
       "file": "Lib/packagenamespaces/uploads.py",
-      "lines_scope": 48,
-      "lines_covered": 44,
-      "raw_pct": 91.7,
+      "lines_scope": 50,
+      "lines_covered": 46,
+      "raw_pct": 92.0,
       "branches": 0,
       "branches_covered": 0,
       "branch_pct": null,

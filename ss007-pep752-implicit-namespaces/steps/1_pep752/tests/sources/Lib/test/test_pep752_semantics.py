@@ -75,6 +75,9 @@ class GrantStoreTests(_ImplementationTests):
         self.assertEqual(grant.name, "acme")
         self.assertEqual(store.get("acme"), grant)
         self.assertIn("acme", store)
+        self.assertIn("Acme", store)
+        self.assertIn("ACME", store)
+        self.assertNotIn("other", store)
         self.assertEqual(len(store), 1)
         self.assertIsNone(store.get("other"))
 
@@ -129,6 +132,9 @@ class GrantStoreTests(_ImplementationTests):
         self.assertEqual(
             store.reserve("Acme.Widgets", "acme-corp").name, "acme-widgets"
         )
+        for name in ("acme-widgets", "Acme.Widgets", "ACME_WIDGETS", "acme.widgets"):
+            with self.subTest(name=name):
+                self.assertIn(name, store)
 
     def test_reserve_rejects_empty_owner(self):
         self.require_impl()

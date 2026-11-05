@@ -208,6 +208,11 @@
   "dump --project prints one project detail mapping",
   "check-upload with an empty owner exits 1 even for unreserved projects",
   "verify_offline validates every fixture shape before checking",
-  "a malformed second index fails verification"
+  "a malformed second index fails verification",
+  "the package root re-exports every public symbol",
+  "GrantStore, RepositoryIndex and SecurityPolicy import from the package root",
+  "list_namespaces returns a bare sorted list of name mappings",
+  "the versioned api_version envelope belongs to bare dump only",
+  "invalid policy namespaces raise InvalidNamespaceError"
  ]
 }

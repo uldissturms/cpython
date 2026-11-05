@@ -135,5 +135,10 @@ run_control neg store_spoof solve "$TASKDIR/build/neg_controls/store_spoof"
 # Scores 1 on a report-only grader, 0 once the independent probe (which
 # never reads the report) joins the reward.
 run_control neg junit_forge solve "$TASKDIR/build/neg_controls/junit_forge"
+# neg: two-channel rewrite attack (same broken stubs, but the shutdown hook
+# overwrites the probe's verdict file with a passed payload too). Scores 1
+# on the single-process probe (both forgeries win at shutdown), 0 once the
+# split probe's parent writes the verdict after the armed child has exited.
+run_control neg probe_forge solve "$TASKDIR/build/neg_controls/probe_forge"
 # twice: one solved container graded twice.
 run_twice "$STEP"

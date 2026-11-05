@@ -1,7 +1,7 @@
 # Carried findings -- ss007-pep752-implicit-namespaces
 
-generated: 2026-11-04T19:38:08-08:00
-open: 13   adjudicated: 0   total: 13
+generated: 2026-11-04T22:06:57-08:00
+open: 18   adjudicated: 0   total: 18
 
 Critical and High never appear here -- those route to BUILD immediately.
 This is the Medium/Low/WARN ledger, collected across every stage and
@@ -24,3 +24,8 @@ states its reason. Nothing here is auto-closed and there is no allowlist.
 | A | bench validate --qualitative-only | - | medium | [Medium] Env: [1_pep752] The reward pipeline in tests/test.sh invokes a second grading channel via "$TESTS_DIR/probe.py" and makes reward strictly conditional on probe_passed (reward=0 unless the probe payload reports passed:true AND all required ids pass), but probe.py is not present among the inlined tests/ files. If probe.py is genuinely absent from the verifier tree it fails closed and the rew | **OPEN** | - |
 | A | bench validate --qualitative-only | - | medium | [Low] Meta: [1_pep752] No README.md was provided at the task directory (P18). README is not agent-facing, so impact is limited to reviewer/author tooling and Oracle/Model analysis visibility. | **OPEN** | - |
 | A | bench validate --qualitative-only | - | medium | [Low] Meta: [1_pep752] Repo is python/cpython, a heavily-used SWE-bench contamination target (P10). Real risk is low because the task implements a synthetic/future module (`packagenamespaces`, PEP 752, CPython 3.16) that does not exist upstream, and the instance_id/base_commit are not standard SWE-bench ids. Contamination Suspected: defer to check-contamination-v2. | **OPEN** | - |
+| A | lh-review-task-beta (pre-push) | N01 | low | Optional: The behavior is relevant to package security, but a new CPython standard-library package containing index-service models, installer policy, a grant-management CLI, and bespoke fixtures is an artificial project boundary. The instruction's inventory of exact symbols and output fragments also does not resemble a typical CPython feature request. | **OPEN** | - |
+| A | lh-review-task-beta (pre-push) | N04 | low | Optional: The underlying implementation offers useful reasoning challenges, but the observed binary reward is dominated by undisclosed import aliases and interface choices. As currently specified and graded, a strong completed implementation receives the same zero as the untouched baseline, obscuring the desired capability signal. | **OPEN** | - |
+| A | bench validate --qualitative-only | - | medium | [Medium] Env: [1_pep752] Separate-verifier reward depends on probe.py (test.sh runs `$REPO/python -I -S $TESTS_DIR/probe.py` and step-4 reward requires `probe.get("passed") is True`), but probe.py is absent from the inlined tests/ (all files) set. If genuinely missing rather than a transcription omission, probe.json is never written, probe_passed stays False, and reward is 0 for every solution inc | **OPEN** | - |
+| A | bench validate --qualitative-only | - | medium | [Low] Spec: [1_pep752] instruction.md is composed of extremely long run-on sentences that concatenate many independent requirements, making individual obligations hard to extract. Content is complete and tests resolve ambiguity, so impact is readability only. | **OPEN** | - |
+| A | bench validate --qualitative-only | - | medium | [Low] Meta: [1_pep752] For an environment_mode="separate" task, tests/Dockerfile and the task README.md (<task-dir>/README.md) are not present in the inlined file set; confirm the separate-verifier contract (non-empty tests/Dockerfile, artifacts carrying repo state) is complete. | **OPEN** | - |

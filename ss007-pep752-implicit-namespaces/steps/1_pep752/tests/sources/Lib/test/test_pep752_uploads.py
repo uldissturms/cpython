@@ -34,12 +34,17 @@ class UploadTests(unittest.TestCase):
         registry = GrandfatheredRegistry()
         registry.add("Acme.Legacy")
         self.assertTrue(registry.covers("acme-legacy"))
+        self.assertTrue(registry.covers("Acme.Legacy"))
+        self.assertTrue(registry.covers("ACME_LEGACY"))
         self.assertIn("acme-legacy", registry)
+        self.assertIn("Acme.Legacy", registry)
+        self.assertIn("acme.legacy", registry)
         self.assertEqual(registry.projects(), ["acme-legacy"])
         self.assertEqual(len(registry), 1)
 
         registry.discard("acme-legacy")
         self.assertFalse(registry.covers("acme-legacy"))
+        self.assertFalse(registry.covers("ACME-LEGACY"))
 
     def test_owner_upload_allowed(self):
         self.require_impl()

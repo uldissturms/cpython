@@ -330,6 +330,8 @@ class HarnessTests(unittest.TestCase):
             ("projects.json", "{}"),
             ("grants.json", "{not valid json"),
             ("second-index.json", '{"grants": "acme", "projects": {"x": "y"}}'),
+            ("second-index.json", '{"grants": [123], "projects": {"x": "y"}}'),
+            ("second-index.json", '{"grants": [{"name": "acme"}], "projects": {"x": "y"}}'),
         ):
             with self.subTest(filename=filename):
                 with tempfile.TemporaryDirectory() as directory:
