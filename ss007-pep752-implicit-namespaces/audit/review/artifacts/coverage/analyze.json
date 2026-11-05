@@ -1,0 +1,143 @@
+{
+  "mode": "diff",
+  "threshold": 80.0,
+  "overall": {
+    "lines_scope": 545,
+    "lines_covered": 526,
+    "raw_pct": 96.5,
+    "branches": 0,
+    "branches_covered": 0,
+    "branch_pct": null
+  },
+  "passed": true,
+  "verdict": "PASS",
+  "files": [
+    {
+      "file": "Lib/packagenamespaces/__init__.py",
+      "lines_scope": 10,
+      "lines_covered": 10,
+      "raw_pct": 100.0,
+      "branches": 0,
+      "branches_covered": 0,
+      "branch_pct": null,
+      "uncovered_lines": []
+    },
+    {
+      "file": "Lib/packagenamespaces/__main__.py",
+      "lines_scope": 5,
+      "lines_covered": 5,
+      "raw_pct": 100.0,
+      "branches": 0,
+      "branches_covered": 0,
+      "branch_pct": null,
+      "uncovered_lines": []
+    },
+    {
+      "file": "Lib/packagenamespaces/cli.py",
+      "lines_scope": 216,
+      "lines_covered": 204,
+      "raw_pct": 94.4,
+      "branches": 0,
+      "branches_covered": 0,
+      "branch_pct": null,
+      "uncovered_lines": [
+        97,
+        100,
+        112,
+        117,
+        124,
+        125,
+        131,
+        284,
+        285,
+        286,
+        287,
+        289
+      ]
+    },
+    {
+      "file": "Lib/packagenamespaces/grants.py",
+      "lines_scope": 115,
+      "lines_covered": 115,
+      "raw_pct": 100.0,
+      "branches": 0,
+      "branches_covered": 0,
+      "branch_pct": null,
+      "uncovered_lines": []
+    },
+    {
+      "file": "Lib/packagenamespaces/matching.py",
+      "lines_scope": 9,
+      "lines_covered": 9,
+      "raw_pct": 100.0,
+      "branches": 0,
+      "branches_covered": 0,
+      "branch_pct": null,
+      "uncovered_lines": []
+    },
+    {
+      "file": "Lib/packagenamespaces/metadata.py",
+      "lines_scope": 77,
+      "lines_covered": 76,
+      "raw_pct": 98.7,
+      "branches": 0,
+      "branches_covered": 0,
+      "branch_pct": null,
+      "uncovered_lines": [
+        42
+      ]
+    },
+    {
+      "file": "Lib/packagenamespaces/normalize.py",
+      "lines_scope": 17,
+      "lines_covered": 17,
+      "raw_pct": 100.0,
+      "branches": 0,
+      "branches_covered": 0,
+      "branch_pct": null,
+      "uncovered_lines": []
+    },
+    {
+      "file": "Lib/packagenamespaces/policy.py",
+      "lines_scope": 46,
+      "lines_covered": 44,
+      "raw_pct": 95.7,
+      "branches": 0,
+      "branches_covered": 0,
+      "branch_pct": null,
+      "uncovered_lines": [
+        73,
+        74
+      ]
+    },
+    {
+      "file": "Lib/packagenamespaces/uploads.py",
+      "lines_scope": 50,
+      "lines_covered": 46,
+      "raw_pct": 92.0,
+      "branches": 0,
+      "branches_covered": 0,
+      "branch_pct": null,
+      "uncovered_lines": [
+        76,
+        77,
+        78,
+        81
+      ]
+    }
+  ],
+  "unmeasured": [
+    {
+      "file": "Python/stdlib_module_names.h",
+      "added_lines": [
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211
+      ]
+    }
+  ]
+}

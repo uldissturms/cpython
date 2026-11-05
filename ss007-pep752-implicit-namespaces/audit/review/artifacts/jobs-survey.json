@@ -1,6 +1,6 @@
 {
   "all_jobs": 1,
-  "jobs_dir": "/home/uldis/cpython/.autopilot/runs/ss007-pep752-implicit-namespaces/pre_push_jobs/5c1c9b5c-f1c4-419c-bc02-5249c36826c6",
+  "jobs_dir": "/home/uldis/cpython/.autopilot/runs/ss007-pep752-implicit-namespaces/pre_push_jobs/2d15c95d-b469-4a24-8667-15ff64bde258",
   "reward_shape": {
     "continuous": false,
     "min_rewards": [],
@@ -8,10 +8,10 @@
   },
   "stages": {
     "codex": {
-      "job": "/home/uldis/cpython/.autopilot/runs/ss007-pep752-implicit-namespaces/pre_push_jobs/5c1c9b5c-f1c4-419c-bc02-5249c36826c6/2026-11-05__01-30-29__aca8fd",
+      "job": "/home/uldis/cpython/.autopilot/runs/ss007-pep752-implicit-namespaces/pre_push_jobs/2d15c95d-b469-4a24-8667-15ff64bde258/2026-11-05__04-19-19__6ea475",
       "model": "gpt-6.1-sol",
-      "name": "2026-11-05__01-30-29__aca8fd",
-      "passed": 1,
+      "name": "2026-11-05__04-19-19__6ea475",
+      "passed": 0,
       "stage": "codex",
       "total": 1,
       "trajectories": 1

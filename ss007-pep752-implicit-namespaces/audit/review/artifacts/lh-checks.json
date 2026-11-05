@@ -2,7 +2,7 @@
   "difficulty": {
     "data": {
       "horizon_local": {
-        "available": true,
+        "available": false,
         "metric": "per-trial peak (Gate C basis), not codimango's mean",
         "raw": {
           "include_failed": false,
@@ -25,9 +25,9 @@
             },
             {
               "job": {
-                "createdAt": "2026-11-05T01:30:32.318933",
-                "id": "2026-11-05__01-30-29__aca8fd",
-                "meanReward": 1.0,
+                "createdAt": "2026-11-05T04:19:21.905614",
+                "id": "2026-11-05__04-19-19__6ea475",
+                "meanReward": 0.0,
                 "modelTotal": 1,
                 "source": "local",
                 "status": "completed",
@@ -36,31 +36,13 @@
               "model": "codex",
               "selection": "latest-job",
               "source": "local",
-              "trials": [
-                {
-                  "artifact_trial_id": "ss007-pep752-implicit-namespaces__BXJjeG5",
-                  "compacted": null,
-                  "context_source": "final_metrics.extra.last_token_usage.input_tokens",
-                  "context_tokens": 101126,
-                  "id": "d7cae7ed-7f48-4fe6-bf9b-d257da90d7cb",
-                  "model_check": "unknown",
-                  "model_conflict": null,
-                  "name": "BXJjeG5",
-                  "passed": true,
-                  "peak_context_tokens": null,
-                  "peak_runtime_model": null,
-                  "reward": 1.0,
-                  "runtime_model": "gpt-6.1-sol",
-                  "runtime_models": [],
-                  "score": null,
-                  "turns": null
-                }
-              ]
+              "trials": []
             }
           ],
           "source": "local",
-          "task": "5c1c9b5c-f1c4-419c-bc02-5249c36826c6"
-        }
+          "task": "2d15c95d-b469-4a24-8667-15ff64bde258"
+        },
+        "reason": "no passing agent trajectory in the local jobs \u2014 an oracle has no agent turns, and a failed rollout has no peak to measure"
       },
       "reward_shape": {
         "continuous": false,
@@ -70,9 +52,10 @@
         "usable": true
       },
       "tool_calls_local": {
-        "reward": 1.0,
-        "tool_calls": 0,
-        "trial": "ss007-pep752-implicit-namespaces__BXJjeG5"
+        "reason": "no passing non-oracle rollout, so there is no e2e run whose tool calls Gate C could read",
+        "reward": null,
+        "tool_calls": null,
+        "trial": null
       }
     },
     "findings": [
@@ -83,7 +66,7 @@
   "horizon": {
     "data": {
       "horizon_local": {
-        "available": true,
+        "available": false,
         "metric": "per-trial peak (Gate C basis), not codimango's mean",
         "raw": {
           "include_failed": false,
@@ -106,9 +89,9 @@
             },
             {
               "job": {
-                "createdAt": "2026-11-05T01:30:32.318933",
-                "id": "2026-11-05__01-30-29__aca8fd",
-                "meanReward": 1.0,
+                "createdAt": "2026-11-05T04:19:21.905614",
+                "id": "2026-11-05__04-19-19__6ea475",
+                "meanReward": 0.0,
                 "modelTotal": 1,
                 "source": "local",
                 "status": "completed",
@@ -117,31 +100,13 @@
               "model": "codex",
               "selection": "latest-job",
               "source": "local",
-              "trials": [
-                {
-                  "artifact_trial_id": "ss007-pep752-implicit-namespaces__BXJjeG5",
-                  "compacted": null,
-                  "context_source": "final_metrics.extra.last_token_usage.input_tokens",
-                  "context_tokens": 101126,
-                  "id": "d7cae7ed-7f48-4fe6-bf9b-d257da90d7cb",
-                  "model_check": "unknown",
-                  "model_conflict": null,
-                  "name": "BXJjeG5",
-                  "passed": true,
-                  "peak_context_tokens": null,
-                  "peak_runtime_model": null,
-                  "reward": 1.0,
-                  "runtime_model": "gpt-6.1-sol",
-                  "runtime_models": [],
-                  "score": null,
-                  "turns": null
-                }
-              ]
+              "trials": []
             }
           ],
           "source": "local",
-          "task": "5c1c9b5c-f1c4-419c-bc02-5249c36826c6"
-        }
+          "task": "2d15c95d-b469-4a24-8667-15ff64bde258"
+        },
+        "reason": "no passing agent trajectory in the local jobs \u2014 an oracle has no agent turns, and a failed rollout has no peak to measure"
       },
       "reward_shape": {
         "continuous": false,
@@ -151,14 +116,15 @@
         "usable": true
       },
       "tool_calls_local": {
-        "reward": 1.0,
-        "tool_calls": 0,
-        "trial": "ss007-pep752-implicit-namespaces__BXJjeG5"
+        "reason": "no passing non-oracle rollout, so there is no e2e run whose tool calls Gate C could read",
+        "reward": null,
+        "tool_calls": null,
+        "trial": null
       }
     },
     "findings": [
-      "horizon: Gate C tool-call arm \u2014 passing trial ss007-pep752-implicit-namespaces__BXJjeG5 reports 0 tool calls (the bar is 100).",
-      "horizon: measured locally by lh-count-tokens as a **per-trial peak (Gate C basis)**, which is NOT codimango's meanPeakContextTokens. Numbers are in the artifact."
+      "horizon: tool-call arm unavailable \u2014 no passing non-oracle rollout, so there is no e2e run whose tool calls Gate C could read",
+      "horizon: context arm unavailable \u2014 no passing agent trajectory in the local jobs \u2014 an oracle has no agent turns, and a failed rollout has no peak to measure"
     ]
   },
   "producer": "lh-review-task-beta/lh_checks",

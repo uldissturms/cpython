@@ -1,0 +1,638 @@
+== CPython 3.16.0a1+dev (34796e8-dirty:34796e8, Nov 5 2026, 13:02:35) [GCC 13.3.0]
+== Linux-6.16.1-0_fbk5_0_g0e127f210adc-x86_64-with-glibc2.39 little-endian
+== Python build: release
+== cwd: /app/build/test_python_worker_8957æ
+== CPU count: 4 (process) / 166 (system)
+== encodings: locale=UTF-8 FS=utf-8
+== resources: all test resources are disabled, use -u option to unskip tests
+
+Using random seed: 2631028918
+0:00:00 load avg: 11.53 mem:   21.6 MiB Run 10 tests sequentially in a single process
+0:00:00 load avg: 11.53 mem:   21.6 MiB [ 1/10] test_pep752_naming
+test_hyphen_depth_counts (test.test_pep752_naming.NamingTests.test_hyphen_depth_counts) ... ok
+test_invalid_names_reject_non_string (test.test_pep752_naming.NamingTests.test_invalid_names_reject_non_string) ... ok
+test_invalid_names_rejected (test.test_pep752_naming.NamingTests.test_invalid_names_rejected) ... ok
+test_normalize_collapses_separator_runs (test.test_pep752_naming.NamingTests.test_normalize_collapses_separator_runs) ... ok
+test_normalize_leaves_clean_names_alone (test.test_pep752_naming.NamingTests.test_normalize_leaves_clean_names_alone) ... ok
+test_normalize_lowercases_and_folds_separators (test.test_pep752_naming.NamingTests.test_normalize_lowercases_and_folds_separators) ... ok
+test_normalize_rejects_non_string (test.test_pep752_naming.NamingTests.test_normalize_rejects_non_string) ... ok
+test_valid_names_accepted (test.test_pep752_naming.NamingTests.test_valid_names_accepted) ... ok
+test_valid_names_with_separators (test.test_pep752_naming.NamingTests.test_valid_names_with_separators) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.002s
+
+OK
+0:00:00 load avg: 11.53 mem:   22.6 MiB [ 1/10] test_pep752_naming passed
+0:00:00 load avg: 11.53 mem:   22.6 MiB [ 2/10] test_pep752_semantics
+test_children_direct_only (test.test_pep752_semantics.GrantStoreTests.test_children_direct_only) ... ok
+test_children_sparse_chain_skips_gap (test.test_pep752_semantics.GrantStoreTests.test_children_sparse_chain_skips_gap) ... ok
+test_default_depth_limit_is_three (test.test_pep752_semantics.GrantStoreTests.test_default_depth_limit_is_three) ... ok
+test_depth_limit_enforced (test.test_pep752_semantics.GrantStoreTests.test_depth_limit_enforced) ... ok
+test_grants_overlap_both_directions (test.test_pep752_semantics.GrantStoreTests.test_grants_overlap_both_directions) ... ok
+test_matching_returns_sorted_grants (test.test_pep752_semantics.GrantStoreTests.test_matching_returns_sorted_grants) ... ok
+test_namespaces_sorted (test.test_pep752_semantics.GrantStoreTests.test_namespaces_sorted) ... ok
+test_overlap_exact_duplicate_rejected (test.test_pep752_semantics.GrantStoreTests.test_overlap_exact_duplicate_rejected) ... ok
+test_overlap_hyphen_boundary_not_overlapping (test.test_pep752_semantics.GrantStoreTests.test_overlap_hyphen_boundary_not_overlapping) ... ok
+test_overlap_longer_under_shorter_rejected (test.test_pep752_semantics.GrantStoreTests.test_overlap_longer_under_shorter_rejected) ... ok
+test_overlap_same_owner_nesting_allowed (test.test_pep752_semantics.GrantStoreTests.test_overlap_same_owner_nesting_allowed) ... ok
+test_overlap_shorter_over_longer_rejected (test.test_pep752_semantics.GrantStoreTests.test_overlap_shorter_over_longer_rejected) ... ok
+test_parent_sparse_chain_is_none (test.test_pep752_semantics.GrantStoreTests.test_parent_sparse_chain_is_none) ... ok
+test_parent_with_grant (test.test_pep752_semantics.GrantStoreTests.test_parent_with_grant) ... ok
+test_parent_without_grant_is_none (test.test_pep752_semantics.GrantStoreTests.test_parent_without_grant_is_none) ... ok
+test_remove (test.test_pep752_semantics.GrantStoreTests.test_remove) ... ok
+test_remove_unknown_raises (test.test_pep752_semantics.GrantStoreTests.test_remove_unknown_raises) ... ok
+test_reserve_and_get (test.test_pep752_semantics.GrantStoreTests.test_reserve_and_get) ... ok
+test_reserve_normalizes (test.test_pep752_semantics.GrantStoreTests.test_reserve_normalizes) ... ok
+test_reserve_rejects_empty_owner (test.test_pep752_semantics.GrantStoreTests.test_reserve_rejects_empty_owner) ... ok
+test_reserve_rejects_invalid (test.test_pep752_semantics.GrantStoreTests.test_reserve_rejects_invalid) ... ok
+test_transfer (test.test_pep752_semantics.GrantStoreTests.test_transfer) ... ok
+test_transfer_conflicting_raises (test.test_pep752_semantics.GrantStoreTests.test_transfer_conflicting_raises) ... ok
+test_transfer_unknown_raises (test.test_pep752_semantics.GrantStoreTests.test_transfer_unknown_raises) ... ok
+test_exact_match (test.test_pep752_semantics.MatchingTests.test_exact_match) ... ok
+test_match_normalizes_inputs (test.test_pep752_semantics.MatchingTests.test_match_normalizes_inputs) ... ok
+test_missing_hyphen_does_not_match (test.test_pep752_semantics.MatchingTests.test_missing_hyphen_does_not_match) ... ok
+test_prefix_hyphen_match (test.test_pep752_semantics.MatchingTests.test_prefix_hyphen_match) ... ok
+test_unrelated_does_not_match (test.test_pep752_semantics.MatchingTests.test_unrelated_does_not_match) ... ok
+
+----------------------------------------------------------------------
+Ran 29 tests in 0.004s
+
+OK
+0:00:00 load avg: 11.53 mem:   22.6 MiB [ 2/10] test_pep752_semantics passed
+0:00:00 load avg: 11.53 mem:   22.6 MiB [ 3/10] test_pep752_uploads
+test_authorize_upload_rejects_empty_owner (test.test_pep752_uploads.UploadTests.test_authorize_upload_rejects_empty_owner) ... ok
+test_conflict_status_constant (test.test_pep752_uploads.UploadTests.test_conflict_status_constant) ... ok
+test_exact_namespace_project_gated (test.test_pep752_uploads.UploadTests.test_exact_namespace_project_gated) ... ok
+test_grandfathered_registry_tracks_projects (test.test_pep752_uploads.UploadTests.test_grandfathered_registry_tracks_projects) ... ok
+test_grandfathered_stranger_allowed (test.test_pep752_uploads.UploadTests.test_grandfathered_stranger_allowed) ... ok
+test_hyphen_boundary_not_gated (test.test_pep752_uploads.UploadTests.test_hyphen_boundary_not_gated) ... ok
+test_nongrandfathered_stranger_denied (test.test_pep752_uploads.UploadTests.test_nongrandfathered_stranger_denied) ... ok
+test_normalization_applied_before_check (test.test_pep752_uploads.UploadTests.test_normalization_applied_before_check) ... ok
+test_owner_upload_allowed (test.test_pep752_uploads.UploadTests.test_owner_upload_allowed) ... ok
+test_stranger_upload_conflicts (test.test_pep752_uploads.UploadTests.test_stranger_upload_conflicts) ... ok
+test_unreserved_upload_allowed (test.test_pep752_uploads.UploadTests.test_unreserved_upload_allowed) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.001s
+
+OK
+0:00:00 load avg: 11.53 mem:   22.6 MiB [ 3/10] test_pep752_uploads passed
+0:00:00 load avg: 11.53 mem:   22.6 MiB [ 4/10] test_pep752_metadata
+test_api_version_is_1_5 (test.test_pep752_metadata.MetadataTests.test_api_version_is_1_5) ... ok
+test_grant_removal_nulls_detail (test.test_pep752_metadata.MetadataTests.test_grant_removal_nulls_detail) ... ok
+test_html_carries_no_namespace_keys (test.test_pep752_metadata.MetadataTests.test_html_carries_no_namespace_keys) ... ok
+test_html_escapes_special_characters (test.test_pep752_metadata.MetadataTests.test_html_escapes_special_characters) ... ok
+test_html_semantically_stable (test.test_pep752_metadata.MetadataTests.test_html_semantically_stable) ... ok
+test_legacy_endpoints_raise_not_supported (test.test_pep752_metadata.MetadataTests.test_legacy_endpoints_raise_not_supported) ... ok
+test_legacy_repository_is_1_4_and_silent (test.test_pep752_metadata.MetadataTests.test_legacy_repository_is_1_4_and_silent) ... ok
+test_namespace_detail_children_direct_only (test.test_pep752_metadata.MetadataTests.test_namespace_detail_children_direct_only) ... ok
+test_namespace_detail_normalizes_input (test.test_pep752_metadata.MetadataTests.test_namespace_detail_normalizes_input) ... ok
+test_namespace_detail_parent_null_without_grant (test.test_pep752_metadata.MetadataTests.test_namespace_detail_parent_null_without_grant) ... ok
+test_namespace_detail_shape (test.test_pep752_metadata.MetadataTests.test_namespace_detail_shape) ... ok
+test_namespace_detail_unknown_raises (test.test_pep752_metadata.MetadataTests.test_namespace_detail_unknown_raises) ... ok
+test_namespace_list_empty (test.test_pep752_metadata.MetadataTests.test_namespace_list_empty) ... ok
+test_namespace_list_shape (test.test_pep752_metadata.MetadataTests.test_namespace_list_shape) ... ok
+test_project_detail_grandfathered_unowned (test.test_pep752_metadata.MetadataTests.test_project_detail_grandfathered_unowned) ... ok
+test_project_detail_matched_owned (test.test_pep752_metadata.MetadataTests.test_project_detail_matched_owned) ... ok
+test_project_detail_multiple_matches_sorted (test.test_pep752_metadata.MetadataTests.test_project_detail_multiple_matches_sorted) ... ok
+test_project_detail_unmatched_is_null (test.test_pep752_metadata.MetadataTests.test_project_detail_unmatched_is_null) ... ok
+test_register_project_records_without_authorization (test.test_pep752_metadata.MetadataTests.test_register_project_records_without_authorization) ... ok
+test_register_project_validates_owner (test.test_pep752_metadata.MetadataTests.test_register_project_validates_owner) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 0.004s
+
+OK
+0:00:00 load avg: 11.53 mem:   22.7 MiB [ 4/10] test_pep752_metadata passed
+0:00:00 load avg: 11.53 mem:   22.7 MiB [ 5/10] test_pep752_policy
+test_allows_granted_owner_dependency (test.test_pep752_policy.PolicyTests.test_allows_granted_owner_dependency) ... ok
+test_allows_with_multiple_namespaces (test.test_pep752_policy.PolicyTests.test_allows_with_multiple_namespaces) ... ok
+test_denies_grandfathered_foreign_project (test.test_pep752_policy.PolicyTests.test_denies_grandfathered_foreign_project) ... ok
+test_denies_ungranted_namespace (test.test_pep752_policy.PolicyTests.test_denies_ungranted_namespace) ... ok
+test_denies_unknown_project (test.test_pep752_policy.PolicyTests.test_denies_unknown_project) ... ok
+test_denies_wrong_owner (test.test_pep752_policy.PolicyTests.test_denies_wrong_owner) ... ok
+test_evaluate_empty_requirements (test.test_pep752_policy.PolicyTests.test_evaluate_empty_requirements) ... ok
+test_evaluate_normalizes_names (test.test_pep752_policy.PolicyTests.test_evaluate_normalizes_names) ... ok
+test_evaluate_reports_each_requirement (test.test_pep752_policy.PolicyTests.test_evaluate_reports_each_requirement) ... ok
+test_grant_not_shared_between_repositories (test.test_pep752_policy.PolicyTests.test_grant_not_shared_between_repositories) ... ok
+test_policy_validates_namespaces (test.test_pep752_policy.PolicyTests.test_policy_validates_namespaces) ... ok
+test_policy_validates_owner (test.test_pep752_policy.PolicyTests.test_policy_validates_owner) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.002s
+
+OK
+0:00:00 load avg: 11.53 mem:   22.7 MiB [ 5/10] test_pep752_policy passed
+0:00:00 load avg: 11.53 mem:   22.7 MiB [ 6/10] test_pep752_tooling
+test_cli_check_upload_allowed (test.test_pep752_tooling.CliTests.test_cli_check_upload_allowed) ... ok
+test_cli_check_upload_denied (test.test_pep752_tooling.CliTests.test_cli_check_upload_denied) ... ok
+test_cli_check_upload_grandfathered_allowed (test.test_pep752_tooling.CliTests.test_cli_check_upload_grandfathered_allowed) ... ok
+test_cli_check_upload_rejects_empty_owner (test.test_pep752_tooling.CliTests.test_cli_check_upload_rejects_empty_owner) ... ok
+test_cli_corrupt_store_fails (test.test_pep752_tooling.CliTests.test_cli_corrupt_store_fails) ... ok
+test_cli_dump (test.test_pep752_tooling.CliTests.test_cli_dump) ... ok
+test_cli_dump_project (test.test_pep752_tooling.CliTests.test_cli_dump_project) ... ok
+test_cli_loads_documented_store_schema (test.test_pep752_tooling.CliTests.test_cli_loads_documented_store_schema) ... ok
+test_cli_module_entrypoint (test.test_pep752_tooling.CliTests.test_cli_module_entrypoint) ... ok
+test_cli_package_root_reexports_build_parser (test.test_pep752_tooling.CliTests.test_cli_package_root_reexports_build_parser) ... ok
+test_cli_persists_documented_store_schema (test.test_pep752_tooling.CliTests.test_cli_persists_documented_store_schema) ... ok
+test_cli_register_and_grandfather (test.test_pep752_tooling.CliTests.test_cli_register_and_grandfather) ... ok
+test_cli_register_rejects_empty_owner (test.test_pep752_tooling.CliTests.test_cli_register_rejects_empty_owner) ... ok
+test_cli_remove (test.test_pep752_tooling.CliTests.test_cli_remove) ... ok
+test_cli_reserve_and_list (test.test_pep752_tooling.CliTests.test_cli_reserve_and_list) ... ok
+test_cli_reserve_overlap_fails (test.test_pep752_tooling.CliTests.test_cli_reserve_overlap_fails) ... ok
+test_cli_show (test.test_pep752_tooling.CliTests.test_cli_show) ... ok
+test_cli_show_unknown_fails (test.test_pep752_tooling.CliTests.test_cli_show_unknown_fails) ... ok
+test_distribution_lists_new_page (test.test_pep752_tooling.DocsTests.test_distribution_lists_new_page) ... ok
+test_install_registers_package (test.test_pep752_tooling.DocsTests.test_install_registers_package) ... ok
+test_library_page_documents_module (test.test_pep752_tooling.DocsTests.test_library_page_documents_module) ... ok
+test_news_entry_exists (test.test_pep752_tooling.DocsTests.test_news_entry_exists) ... ok
+test_whatsnew_announces_module (test.test_pep752_tooling.DocsTests.test_whatsnew_announces_module) ... ok
+test_gen_fixtures_writes_indexes (test.test_pep752_tooling.HarnessTests.test_gen_fixtures_writes_indexes) ... ok
+test_scripts_use_no_network (test.test_pep752_tooling.HarnessTests.test_scripts_use_no_network) ... ok
+test_verify_offline_passes (test.test_pep752_tooling.HarnessTests.test_verify_offline_passes) ... ok
+test_verify_offline_rejects_damaged_fixtures (test.test_pep752_tooling.HarnessTests.test_verify_offline_rejects_damaged_fixtures) ... ok
+test_verify_offline_rejects_missing_fixtures (test.test_pep752_tooling.HarnessTests.test_verify_offline_rejects_missing_fixtures) ... ok
+test_installed_tree_contains_package (test.test_pep752_tooling.InstallTests.test_installed_tree_contains_package) ... ok
+test_stdlib_module_names_contains_package (test.test_pep752_tooling.InstallTests.test_stdlib_module_names_contains_package) ... ok
+
+----------------------------------------------------------------------
+Ran 30 tests in 0.619s
+
+OK
+0:00:00 load avg: 11.53 mem:   23.5 MiB [ 6/10] test_pep752_tooling passed
+0:00:00 load avg: 11.53 mem:   23.5 MiB [ 7/10] test_ensurepip
+test_altinstall_default_pip_conflict (test.test_ensurepip.TestBootstrap.test_altinstall_default_pip_conflict) ... ok
+test_basic_bootstrapping (test.test_ensurepip.TestBootstrap.test_basic_bootstrapping) ... ok
+test_bootstrapping_with_alt_install (test.test_ensurepip.TestBootstrap.test_bootstrapping_with_alt_install) ... ok
+test_bootstrapping_with_default_pip (test.test_ensurepip.TestBootstrap.test_bootstrapping_with_default_pip) ... ok
+test_bootstrapping_with_regular_install (test.test_ensurepip.TestBootstrap.test_bootstrapping_with_regular_install) ... ok
+test_bootstrapping_with_root (test.test_ensurepip.TestBootstrap.test_bootstrapping_with_root) ... ok
+test_bootstrapping_with_upgrade (test.test_ensurepip.TestBootstrap.test_bootstrapping_with_upgrade) ... ok
+test_bootstrapping_with_user (test.test_ensurepip.TestBootstrap.test_bootstrapping_with_user) ... ok
+test_bootstrapping_with_verbosity_1 (test.test_ensurepip.TestBootstrap.test_bootstrapping_with_verbosity_1) ... ok
+test_bootstrapping_with_verbosity_2 (test.test_ensurepip.TestBootstrap.test_bootstrapping_with_verbosity_2) ... ok
+test_bootstrapping_with_verbosity_3 (test.test_ensurepip.TestBootstrap.test_bootstrapping_with_verbosity_3) ... ok
+test_missing_zlib (test.test_ensurepip.TestBootstrap.test_missing_zlib) ... ok
+test_pip_config_file_disabled (test.test_ensurepip.TestBootstrap.test_pip_config_file_disabled) ... ok
+test_pip_environment_variables_removed (test.test_ensurepip.TestBootstrap.test_pip_environment_variables_removed) ... ok
+test_basic_bootstrapping (test.test_ensurepip.TestBootstrappingMainFunction.test_basic_bootstrapping) ... ok
+test_bootstrap_version (test.test_ensurepip.TestBootstrappingMainFunction.test_bootstrap_version) ... ok
+test_bootstrapping_error_code (test.test_ensurepip.TestBootstrappingMainFunction.test_bootstrapping_error_code) ... ok
+test_selected_wheel_path_no_dir (test.test_ensurepip.TestPackages.test_selected_wheel_path_no_dir) ... ok
+test_selected_wheel_path_with_dir (test.test_ensurepip.TestPackages.test_selected_wheel_path_with_dir) ... ok
+test_version (test.test_ensurepip.TestPackages.test_version) ... ok
+test_version_no_dir (test.test_ensurepip.TestPackages.test_version_no_dir) ... ok
+test_wheel_pkg_dir_none (test.test_ensurepip.TestPackages.test_wheel_pkg_dir_none) ... ok
+test_pip_config_file_disabled (test.test_ensurepip.TestUninstall.test_pip_config_file_disabled) ... ok
+test_pip_environment_variables_removed (test.test_ensurepip.TestUninstall.test_pip_environment_variables_removed) ... ok
+test_uninstall (test.test_ensurepip.TestUninstall.test_uninstall) ... ok
+test_uninstall_skipped_when_not_installed (test.test_ensurepip.TestUninstall.test_uninstall_skipped_when_not_installed) ... ok
+test_uninstall_skipped_with_warning_for_wrong_version (test.test_ensurepip.TestUninstall.test_uninstall_skipped_with_warning_for_wrong_version) ... ok
+test_uninstall_with_verbosity_1 (test.test_ensurepip.TestUninstall.test_uninstall_with_verbosity_1) ... ok
+test_uninstall_with_verbosity_2 (test.test_ensurepip.TestUninstall.test_uninstall_with_verbosity_2) ... ok
+test_uninstall_with_verbosity_3 (test.test_ensurepip.TestUninstall.test_uninstall_with_verbosity_3) ... ok
+test_basic_uninstall (test.test_ensurepip.TestUninstallationMainFunction.test_basic_uninstall) ... ok
+test_uninstall_error_code (test.test_ensurepip.TestUninstallationMainFunction.test_uninstall_error_code) ... ok
+test_uninstall_version (test.test_ensurepip.TestUninstallationMainFunction.test_uninstall_version) ... ok
+
+----------------------------------------------------------------------
+Ran 33 tests in 0.039s
+
+OK
+0:00:00 load avg: 11.53 mem:   25.3 MiB [ 7/10] test_ensurepip passed
+0:00:00 load avg: 11.53 mem:   25.3 MiB [ 8/10] test_venv
+test_activate_bat_prefixes_prompt_by_default (test.test_venv.BasicTest.test_activate_bat_prefixes_prompt_by_default) ... skipped 'only relevant on Windows'
+test_activate_bat_respects_disable_prompt (test.test_venv.BasicTest.test_activate_bat_respects_disable_prompt) ... skipped 'only relevant on Windows'
+test_activate_shell_script_has_no_dos_newlines (test.test_venv.BasicTest.test_activate_shell_script_has_no_dos_newlines)
+Test that the `activate` shell script contains no CR LF. ... ok
+test_broken_symlink_in_existing_venv (test.test_venv.BasicTest.test_broken_symlink_in_existing_venv)
+Test creating a venv when a stale venv with broken symlinks exists. ... ok
+test_cli_with_scm_ignore_files (test.test_venv.BasicTest.test_cli_with_scm_ignore_files)
+Test that default SCM ignore files are created by default via the CLI. ... ok
+test_cli_without_scm_ignore_files (test.test_venv.BasicTest.test_cli_without_scm_ignore_files)
+Test that ``--without-scm-ignore-files`` doesn't create SCM ignore files. ... ok
+test_config_file_command_key (test.test_venv.BasicTest.test_config_file_command_key) ... ok
+test_conflicting_version_fields (test.test_venv.BasicTest.test_conflicting_version_fields)
+Test behavior when both version and version_info are present ... ok
+test_create_scm_ignore_files_empty (test.test_venv.BasicTest.test_create_scm_ignore_files_empty)
+Test that no default ignore files are created when ``scm_ignore_files`` ... ok
+test_create_scm_ignore_files_multiple (test.test_venv.BasicTest.test_create_scm_ignore_files_multiple)
+Test that ``scm_ignore_files`` can work with multiple SCMs. ... ok
+test_create_symlinks (test.test_venv.BasicTest.test_create_symlinks) ... ok
+test_deactivate_with_strict_bash_opts (test.test_venv.BasicTest.test_deactivate_with_strict_bash_opts) ... ok
+test_deactivate_with_strict_bash_opts_and_hashing_disabled (test.test_venv.BasicTest.test_deactivate_with_strict_bash_opts_and_hashing_disabled) ... ok
+test_defaults_with_pathlike (test.test_venv.BasicTest.test_defaults_with_pathlike)
+Test the create function with default arguments and a path-like path. ... ok
+test_defaults_with_str_path (test.test_venv.BasicTest.test_defaults_with_str_path)
+Test the create function with default arguments and a str path. ... ok
+test_different_major_version_no_warning (test.test_venv.BasicTest.test_different_major_version_no_warning)
+Test that no warning is emitted when major version differs. ... ok
+test_envbuilder_symlinks (test.test_venv.BasicTest.test_envbuilder_symlinks) ... ok
+test_executable (test.test_venv.BasicTest.test_executable)
+Test that the sys.executable value is as expected. ... ok
+test_executable_symlinks (test.test_venv.BasicTest.test_executable_symlinks)
+Test that the sys.executable value is as expected. ... ok
+test_failed_symlink (test.test_venv.BasicTest.test_failed_symlink)
+Test handling of failed symlinks on Windows. ... skipped 'symlinks on Windows'
+test_fish_activate_shadowed_builtins (test.test_venv.BasicTest.test_fish_activate_shadowed_builtins)
+The fish prompt override restores the exit status through `source` and ... skipped 'fish required for this test'
+test_fish_quoting (test.test_venv.BasicTest.test_fish_quoting)
+Test that the template strings are quoted properly (fish) ... ok
+test_install_scripts_selinux (test.test_venv.BasicTest.test_install_scripts_selinux)
+gh-145417: Test that install_scripts does not copy SELinux context ... ok
+test_isolation (test.test_venv.BasicTest.test_isolation)
+Test isolation from system site-packages ... ok
+test_macos_env (test.test_venv.BasicTest.test_macos_env) ... skipped 'only relevant on macOS'
+test_malformed_version_info_warning (test.test_venv.BasicTest.test_malformed_version_info_warning)
+Test that a warning is emitted on malformed version_info string ... ok
+test_malformed_version_warning (test.test_venv.BasicTest.test_malformed_version_warning)
+Test that a warning is emitted on malformed version string ... ok
+test_multiprocessing (test.test_venv.BasicTest.test_multiprocessing)
+Test that the multiprocessing is able to spawn. ... ok
+test_multiprocessing_recursion (test.test_venv.BasicTest.test_multiprocessing_recursion)
+Test that the multiprocessing is able to spawn itself ... ok
+test_overwrite_existing (test.test_venv.BasicTest.test_overwrite_existing)
+Test creating environment in an existing directory. ... ok
+test_pathsep_error (test.test_venv.BasicTest.test_pathsep_error)
+Test that venv creation fails when the target directory contains ... ok
+test_prefixes (test.test_venv.BasicTest.test_prefixes)
+Test that the prefix values are as expected. ... ok
+test_prompt (test.test_venv.BasicTest.test_prompt) ... ok
+test_scm_ignore_files_git (test.test_venv.BasicTest.test_scm_ignore_files_git)
+Test that a .gitignore file is created when "git" is specified. ... ok
+test_special_chars_bash (test.test_venv.BasicTest.test_special_chars_bash)
+Test that the template strings are quoted properly (bash) ... ok
+test_special_chars_csh (test.test_venv.BasicTest.test_special_chars_csh)
+Test that the template strings are quoted properly (csh) ... skipped 'csh required for this test'
+test_special_chars_windows (test.test_venv.BasicTest.test_special_chars_windows)
+Test that the template strings are quoted properly on Windows ... skipped 'only relevant on Windows'
+test_symlinking (test.test_venv.BasicTest.test_symlinking)
+Test symlinking works as expected ... ok
+test_sysconfig (test.test_venv.BasicTest.test_sysconfig)
+Test that the sysconfig functions work in a virtual environment. ... ok
+test_sysconfig_symlinks (test.test_venv.BasicTest.test_sysconfig_symlinks)
+Test that the sysconfig functions work in a virtual environment. ... ok
+test_unicode_in_batch_file (test.test_venv.BasicTest.test_unicode_in_batch_file)
+Test handling of Unicode paths ... skipped 'only relevant on Windows'
+test_unoverwritable_fails (test.test_venv.BasicTest.test_unoverwritable_fails) ... ok
+test_upgrade (test.test_venv.BasicTest.test_upgrade)
+Test upgrading an existing environment directory. ... ok
+test_upgrade_dependencies (test.test_venv.BasicTest.test_upgrade_dependencies) ... ok
+test_venv_same_path (test.test_venv.BasicTest.test_venv_same_path) ... ok
+test_venvwlauncher (test.test_venv.BasicTest.test_venvwlauncher)
+Test that the GUI launcher runs the GUI python. ... skipped 'only relevant on Windows'
+test_version_info_mismatch_warning (test.test_venv.BasicTest.test_version_info_mismatch_warning)
+Test that a warning is emitted when version_info (used by virtualenv) ... ok
+test_version_match_no_warning (test.test_venv.BasicTest.test_version_match_no_warning)
+Test that no warning is emitted when the venv version matches. ... ok
+test_version_mismatch_warning (test.test_venv.BasicTest.test_version_mismatch_warning)
+Test that a warning is emitted when running a venv created for a ... ok
+test_zippath_from_non_installed_posix (test.test_venv.BasicTest.test_zippath_from_non_installed_posix)
+Test that when create venv from non-installed python, the zip path ... Could not find platform dependent libraries <exec_prefix>
+WARN: Could not find the platform standard library directory! sys.exec_prefix is set to /opt/python-ss007, is this correct?
+ok
+test_devnull (test.test_venv.EnsurePipTest.test_devnull) ... ok
+test_explicit_no_pip (test.test_venv.EnsurePipTest.test_explicit_no_pip) ... ok
+test_no_pip_by_default (test.test_venv.EnsurePipTest.test_no_pip_by_default) ... ok
+test_with_pip (test.test_venv.EnsurePipTest.test_with_pip) ... skipped "resource 'cpu' is not enabled"
+
+----------------------------------------------------------------------
+Ran 54 tests in 1.281s
+
+OK (skipped=10)
+0:00:02 load avg: 11.53 mem:   26.8 MiB [ 8/10] test_venv passed
+0:00:02 load avg: 11.53 mem:   26.8 MiB [ 9/10] test_json
+json ()
+Doctest: json ... ok
+encode (json.encoder.JSONEncoder)
+Doctest: json.encoder.JSONEncoder.encode ... ok
+test_pyjson (test.test_json.TestPyTest.test_pyjson) ... ok
+test_cjson (test.test_json.TestCTest.test_cjson) ... ok
+test_deprecated_module_attributes (test.test_json.TestModule.test_deprecated_module_attributes) ... ok
+json ()
+Doctest: json ... ok
+encode (json.encoder.JSONEncoder)
+Doctest: json.encoder.JSONEncoder.encode ... ok
+test_pyjson (test.test_json.TestPyTest.test_pyjson) ... ok
+test_cjson (test.test_json.TestCTest.test_cjson) ... ok
+test_deprecated_module_attributes (test.test_json.TestModule.test_deprecated_module_attributes) ... ok
+test_array_hook (test.test_json.test_decode.TestCDecode.test_array_hook) ... ok
+test_bytes (test.test_json.test_decode.TestCDecode.test_bytes) ... ok
+test_constant_invalid_case (test.test_json.test_decode.TestCDecode.test_constant_invalid_case) ... ok
+test_decimal (test.test_json.test_decode.TestCDecode.test_decimal) ... ok
+test_decoder_optimizations (test.test_json.test_decode.TestCDecode.test_decoder_optimizations) ... ok
+test_empty_objects (test.test_json.test_decode.TestCDecode.test_empty_objects) ... ok
+test_explicit_cls_skips_json_decoder_default (test.test_json.test_decode.TestCDecode.test_explicit_cls_skips_json_decoder_default) ... ok
+test_extra_data (test.test_json.test_decode.TestCDecode.test_extra_data) ... ok
+test_float (test.test_json.test_decode.TestCDecode.test_float) ... ok
+test_invalid_escape (test.test_json.test_decode.TestCDecode.test_invalid_escape) ... ok
+test_invalid_input_type (test.test_json.test_decode.TestCDecode.test_invalid_input_type) ... ok
+test_keys_reuse (test.test_json.test_decode.TestCDecode.test_keys_reuse) ... ok
+test_limit_int (test.test_json.test_decode.TestCDecode.test_limit_int) ... ok
+test_load_array_hook (test.test_json.test_decode.TestCDecode.test_load_array_hook) ... ok
+test_negative_index (test.test_json.test_decode.TestCDecode.test_negative_index) ... ok
+test_nonascii_digits_rejected (test.test_json.test_decode.TestCDecode.test_nonascii_digits_rejected) ... ok
+test_object_hook (test.test_json.test_decode.TestCDecode.test_object_hook) ... ok
+test_object_pairs_hook (test.test_json.test_decode.TestCDecode.test_object_pairs_hook) ... ok
+test_parse_constant (test.test_json.test_decode.TestCDecode.test_parse_constant) ... ok
+test_string_with_utf8_bom (test.test_json.test_decode.TestCDecode.test_string_with_utf8_bom) ... ok
+test_unterminated_string (test.test_json.test_decode.TestCDecode.test_unterminated_string) ... ok
+test_array_hook (test.test_json.test_decode.TestPyDecode.test_array_hook) ... ok
+test_bytes (test.test_json.test_decode.TestPyDecode.test_bytes) ... ok
+test_constant_invalid_case (test.test_json.test_decode.TestPyDecode.test_constant_invalid_case) ... ok
+test_decimal (test.test_json.test_decode.TestPyDecode.test_decimal) ... ok
+test_decoder_optimizations (test.test_json.test_decode.TestPyDecode.test_decoder_optimizations) ... ok
+test_empty_objects (test.test_json.test_decode.TestPyDecode.test_empty_objects) ... ok
+test_explicit_cls_skips_json_decoder_default (test.test_json.test_decode.TestPyDecode.test_explicit_cls_skips_json_decoder_default) ... ok
+test_extra_data (test.test_json.test_decode.TestPyDecode.test_extra_data) ... ok
+test_float (test.test_json.test_decode.TestPyDecode.test_float) ... ok
+test_invalid_escape (test.test_json.test_decode.TestPyDecode.test_invalid_escape) ... ok
+test_invalid_input_type (test.test_json.test_decode.TestPyDecode.test_invalid_input_type) ... ok
+test_keys_reuse (test.test_json.test_decode.TestPyDecode.test_keys_reuse) ... ok
+test_limit_int (test.test_json.test_decode.TestPyDecode.test_limit_int) ... ok
+test_load_array_hook (test.test_json.test_decode.TestPyDecode.test_load_array_hook) ... ok
+test_negative_index (test.test_json.test_decode.TestPyDecode.test_negative_index) ... ok
+test_nonascii_digits_rejected (test.test_json.test_decode.TestPyDecode.test_nonascii_digits_rejected) ... ok
+test_object_hook (test.test_json.test_decode.TestPyDecode.test_object_hook) ... ok
+test_object_pairs_hook (test.test_json.test_decode.TestPyDecode.test_object_pairs_hook) ... ok
+test_parse_constant (test.test_json.test_decode.TestPyDecode.test_parse_constant) ... ok
+test_string_with_utf8_bom (test.test_json.test_decode.TestPyDecode.test_string_with_utf8_bom) ... ok
+test_unterminated_string (test.test_json.test_decode.TestPyDecode.test_unterminated_string) ... ok
+test_bad_default (test.test_json.test_default.TestCDefault.test_bad_default) ... ok
+test_default (test.test_json.test_default.TestCDefault.test_default) ... ok
+test_ordereddict (test.test_json.test_default.TestCDefault.test_ordereddict) ... ok
+test_bad_default (test.test_json.test_default.TestPyDefault.test_bad_default) ... ok
+test_default (test.test_json.test_default.TestPyDefault.test_default) ... ok
+test_ordereddict (test.test_json.test_default.TestPyDefault.test_ordereddict) ... ok
+test_default_clears_dict_key_uaf (test.test_json.test_dump.TestCDump.test_default_clears_dict_key_uaf) ... ok
+test_dump (test.test_json.test_dump.TestCDump.test_dump) ... ok
+test_dump_skipkeys (test.test_json.test_dump.TestCDump.test_dump_skipkeys) ... ok
+test_dump_skipkeys_indent_empty (test.test_json.test_dump.TestCDump.test_dump_skipkeys_indent_empty) ... ok
+test_dumps (test.test_json.test_dump.TestCDump.test_dumps) ... ok
+test_dumps_dict (test.test_json.test_dump.TestCDump.test_dumps_dict) ... ok
+test_dumps_str_subclass (test.test_json.test_dump.TestCDump.test_dumps_str_subclass) ... ok
+test_encode_evil_dict (test.test_json.test_dump.TestCDump.test_encode_evil_dict) ... ok
+test_encode_mutated (test.test_json.test_dump.TestCDump.test_encode_mutated) ... ok
+test_encode_truefalse (test.test_json.test_dump.TestCDump.test_encode_truefalse) ... ok
+test_large_list (test.test_json.test_dump.TestCDump.test_large_list) ... ok
+test_skipkeys_indent (test.test_json.test_dump.TestCDump.test_skipkeys_indent) ... ok
+test_default_clears_dict_key_uaf (test.test_json.test_dump.TestPyDump.test_default_clears_dict_key_uaf) ... ok
+test_dump (test.test_json.test_dump.TestPyDump.test_dump) ... ok
+test_dump_skipkeys (test.test_json.test_dump.TestPyDump.test_dump_skipkeys) ... ok
+test_dump_skipkeys_indent_empty (test.test_json.test_dump.TestPyDump.test_dump_skipkeys_indent_empty) ... ok
+test_dumps (test.test_json.test_dump.TestPyDump.test_dumps) ... ok
+test_dumps_dict (test.test_json.test_dump.TestPyDump.test_dumps_dict) ... ok
+test_dumps_str_subclass (test.test_json.test_dump.TestPyDump.test_dumps_str_subclass) ... ok
+test_encode_evil_dict (test.test_json.test_dump.TestPyDump.test_encode_evil_dict) ... ok
+test_encode_mutated (test.test_json.test_dump.TestPyDump.test_encode_mutated) ... ok
+test_encode_truefalse (test.test_json.test_dump.TestPyDump.test_encode_truefalse) ... ok
+test_skipkeys_indent (test.test_json.test_dump.TestPyDump.test_skipkeys_indent) ... ok
+test_encode_basestring_ascii (test.test_json.test_encode_basestring_ascii.TestCEncodeBasestringAscii.test_encode_basestring_ascii) ... ok
+test_ordered_dict (test.test_json.test_encode_basestring_ascii.TestCEncodeBasestringAscii.test_ordered_dict) ... ok
+test_overflow (test.test_json.test_encode_basestring_ascii.TestCEncodeBasestringAscii.test_overflow) ... skipped 'not enough memory: 8589934592.0G minimum needed'
+test_sorted_dict (test.test_json.test_encode_basestring_ascii.TestCEncodeBasestringAscii.test_sorted_dict) ... ok
+test_encode_basestring_ascii (test.test_json.test_encode_basestring_ascii.TestPyEncodeBasestringAscii.test_encode_basestring_ascii) ... ok
+test_ordered_dict (test.test_json.test_encode_basestring_ascii.TestPyEncodeBasestringAscii.test_ordered_dict) ... ok
+test_sorted_dict (test.test_json.test_encode_basestring_ascii.TestPyEncodeBasestringAscii.test_sorted_dict) ... ok
+test_dict_keys (test.test_json.test_enum.TestCEnum.test_dict_keys) ... ok
+test_dict_values (test.test_json.test_enum.TestCEnum.test_dict_values) ... ok
+test_floats (test.test_json.test_enum.TestCEnum.test_floats) ... ok
+test_ints (test.test_json.test_enum.TestCEnum.test_ints) ... ok
+test_list (test.test_json.test_enum.TestCEnum.test_list) ... ok
+test_str_enum (test.test_json.test_enum.TestCEnum.test_str_enum) ... ok
+test_weird_floats (test.test_json.test_enum.TestCEnum.test_weird_floats) ... ok
+test_dict_keys (test.test_json.test_enum.TestPyEnum.test_dict_keys) ... ok
+test_dict_values (test.test_json.test_enum.TestPyEnum.test_dict_values) ... ok
+test_floats (test.test_json.test_enum.TestPyEnum.test_floats) ... ok
+test_ints (test.test_json.test_enum.TestPyEnum.test_ints) ... ok
+test_list (test.test_json.test_enum.TestPyEnum.test_list) ... ok
+test_str_enum (test.test_json.test_enum.TestPyEnum.test_str_enum) ... ok
+test_weird_floats (test.test_json.test_enum.TestPyEnum.test_weird_floats) ... ok
+test_extra_data (test.test_json.test_fail.TestCFail.test_extra_data) ... ok
+test_failures (test.test_json.test_fail.TestCFail.test_failures) ... ok
+test_linecol (test.test_json.test_fail.TestCFail.test_linecol) ... ok
+test_non_string_keys_dict (test.test_json.test_fail.TestCFail.test_non_string_keys_dict) ... ok
+test_not_serializable (test.test_json.test_fail.TestCFail.test_not_serializable) ... ok
+test_truncated_input (test.test_json.test_fail.TestCFail.test_truncated_input) ... ok
+test_unexpected_data (test.test_json.test_fail.TestCFail.test_unexpected_data) ... ok
+test_extra_data (test.test_json.test_fail.TestPyFail.test_extra_data) ... ok
+test_failures (test.test_json.test_fail.TestPyFail.test_failures) ... ok
+test_linecol (test.test_json.test_fail.TestPyFail.test_linecol) ... ok
+test_non_string_keys_dict (test.test_json.test_fail.TestPyFail.test_non_string_keys_dict) ... ok
+test_not_serializable (test.test_json.test_fail.TestPyFail.test_not_serializable) ... ok
+test_truncated_input (test.test_json.test_fail.TestPyFail.test_truncated_input) ... ok
+test_unexpected_data (test.test_json.test_fail.TestPyFail.test_unexpected_data) ... ok
+test_allow_nan (test.test_json.test_float.TestCFloat.test_allow_nan) ... ok
+test_floats (test.test_json.test_float.TestCFloat.test_floats) ... ok
+test_ints (test.test_json.test_float.TestCFloat.test_ints) ... ok
+test_out_of_range (test.test_json.test_float.TestCFloat.test_out_of_range) ... ok
+test_allow_nan (test.test_json.test_float.TestPyFloat.test_allow_nan) ... ok
+test_floats (test.test_json.test_float.TestPyFloat.test_floats) ... ok
+test_ints (test.test_json.test_float.TestPyFloat.test_ints) ... ok
+test_out_of_range (test.test_json.test_float.TestPyFloat.test_out_of_range) ... ok
+test_indent (test.test_json.test_indent.TestCIndent.test_indent) ... ok
+test_indent0 (test.test_json.test_indent.TestCIndent.test_indent0) ... ok
+test_indent (test.test_json.test_indent.TestPyIndent.test_indent) ... ok
+test_indent0 (test.test_json.test_indent.TestPyIndent.test_indent0) ... ok
+test_parse (test.test_json.test_pass1.TestCPass1.test_parse) ... ok
+test_parse (test.test_json.test_pass1.TestPyPass1.test_parse) ... ok
+test_parse (test.test_json.test_pass2.TestCPass2.test_parse) ... ok
+test_parse (test.test_json.test_pass2.TestPyPass2.test_parse) ... ok
+test_parse (test.test_json.test_pass3.TestCPass3.test_parse) ... ok
+test_parse (test.test_json.test_pass3.TestPyPass3.test_parse) ... ok
+test_json_decode_error_is_pickleable (test.test_json.test_pickleable.TestPickleable.test_json_decode_error_is_pickleable) ... ok
+test_defaultrecursion (test.test_json.test_recursion.TestCRecursion.test_defaultrecursion) ... ok
+test_dictrecursion (test.test_json.test_recursion.TestCRecursion.test_dictrecursion) ... ok
+test_endless_recursion (test.test_json.test_recursion.TestCRecursion.test_endless_recursion) ... ok
+test_highly_nested_objects_decoding (test.test_json.test_recursion.TestCRecursion.test_highly_nested_objects_decoding) ... ok
+test_highly_nested_objects_encoding (test.test_json.test_recursion.TestCRecursion.test_highly_nested_objects_encoding) ... skipped "resource 'cpu' is not enabled"
+test_listrecursion (test.test_json.test_recursion.TestCRecursion.test_listrecursion) ... ok
+test_defaultrecursion (test.test_json.test_recursion.TestPyRecursion.test_defaultrecursion) ... ok
+test_dictrecursion (test.test_json.test_recursion.TestPyRecursion.test_dictrecursion) ... ok
+test_endless_recursion (test.test_json.test_recursion.TestPyRecursion.test_endless_recursion) ... ok
+test_highly_nested_objects_decoding (test.test_json.test_recursion.TestPyRecursion.test_highly_nested_objects_decoding) ... ok
+test_highly_nested_objects_encoding (test.test_json.test_recursion.TestPyRecursion.test_highly_nested_objects_encoding) ... skipped "resource 'cpu' is not enabled"
+test_listrecursion (test.test_json.test_recursion.TestPyRecursion.test_listrecursion) ... ok
+test_bad_escapes (test.test_json.test_scanstring.TestCScanstring.test_bad_escapes) ... ok
+test_overflow (test.test_json.test_scanstring.TestCScanstring.test_overflow) ... ok
+test_scanstring (test.test_json.test_scanstring.TestCScanstring.test_scanstring) ... ok
+test_surrogates (test.test_json.test_scanstring.TestCScanstring.test_surrogates) ... ok
+test_bad_escapes (test.test_json.test_scanstring.TestPyScanstring.test_bad_escapes) ... ok
+test_overflow (test.test_json.test_scanstring.TestPyScanstring.test_overflow) ... ok
+test_scanstring (test.test_json.test_scanstring.TestPyScanstring.test_scanstring) ... ok
+test_surrogates (test.test_json.test_scanstring.TestPyScanstring.test_surrogates) ... ok
+test_illegal_separators (test.test_json.test_separators.TestCSeparators.test_illegal_separators) ... ok
+test_separators (test.test_json.test_separators.TestCSeparators.test_separators) ... ok
+test_illegal_separators (test.test_json.test_separators.TestPySeparators.test_illegal_separators) ... ok
+test_separators (test.test_json.test_separators.TestPySeparators.test_separators) ... ok
+test_bad_bool_args (test.test_json.test_speedups.TestDecode.test_bad_bool_args) ... ok
+test_make_scanner (test.test_json.test_speedups.TestDecode.test_make_scanner) ... ok
+test_bad_bool_args (test.test_json.test_speedups.TestEncode.test_bad_bool_args) ... ok
+test_bad_markers_argument_to_encoder (test.test_json.test_speedups.TestEncode.test_bad_markers_argument_to_encoder) ... ok
+test_bad_str_encoder (test.test_json.test_speedups.TestEncode.test_bad_str_encoder) ... ok
+test_current_indent_level (test.test_json.test_speedups.TestEncode.test_current_indent_level) ... ok
+test_make_encoder (test.test_json.test_speedups.TestEncode.test_make_encoder) ... ok
+test_mutate_dict_items_during_encode (test.test_json.test_speedups.TestEncode.test_mutate_dict_items_during_encode) ... ok
+test_mutate_list_during_encode (test.test_json.test_speedups.TestEncode.test_mutate_list_during_encode) ... ok
+test_unsortable_keys (test.test_json.test_speedups.TestEncode.test_unsortable_keys) ... ok
+test_encode_basestring_ascii (test.test_json.test_speedups.TestSpeedups.test_encode_basestring_ascii) ... ok
+test_scanstring (test.test_json.test_speedups.TestSpeedups.test_scanstring) ... ok
+test_broken_pipe_error (test.test_json.test_tool.TestMain.test_broken_pipe_error) ... ok
+test_colors (test.test_json.test_tool.TestMain.test_colors) ... ok
+test_compact (test.test_json.test_tool.TestMain.test_compact) ... ok
+test_ensure_ascii_default (test.test_json.test_tool.TestMain.test_ensure_ascii_default) ... ok
+test_help_flag (test.test_json.test_tool.TestMain.test_help_flag) ... ok
+test_indent (test.test_json.test_tool.TestMain.test_indent) ... ok
+test_infile_outfile (test.test_json.test_tool.TestMain.test_infile_outfile) ... ok
+test_infile_stdout (test.test_json.test_tool.TestMain.test_infile_stdout) ... ok
+test_jsonlines (test.test_json.test_tool.TestMain.test_jsonlines) ... ok
+test_jsonlines_from_file (test.test_json.test_tool.TestMain.test_jsonlines_from_file) ... ok
+test_no_ensure_ascii_flag (test.test_json.test_tool.TestMain.test_no_ensure_ascii_flag) ... ok
+test_no_indent (test.test_json.test_tool.TestMain.test_no_indent) ... ok
+test_non_ascii_infile (test.test_json.test_tool.TestMain.test_non_ascii_infile) ... ok
+test_sort_keys_flag (test.test_json.test_tool.TestMain.test_sort_keys_flag) ... ok
+test_stdin_stdout (test.test_json.test_tool.TestMain.test_stdin_stdout) ... ok
+test_tab (test.test_json.test_tool.TestMain.test_tab) ... ok
+test_writing_in_place (test.test_json.test_tool.TestMain.test_writing_in_place) ... ok
+test_broken_pipe_error (test.test_json.test_tool.TestTool.test_broken_pipe_error) ... ok
+test_colors (test.test_json.test_tool.TestTool.test_colors) ... ok
+test_compact (test.test_json.test_tool.TestTool.test_compact) ... ok
+test_ensure_ascii_default (test.test_json.test_tool.TestTool.test_ensure_ascii_default) ... ok
+test_help_flag (test.test_json.test_tool.TestTool.test_help_flag) ... ok
+test_indent (test.test_json.test_tool.TestTool.test_indent) ... ok
+test_infile_outfile (test.test_json.test_tool.TestTool.test_infile_outfile) ... ok
+test_infile_stdout (test.test_json.test_tool.TestTool.test_infile_stdout) ... ok
+test_jsonlines (test.test_json.test_tool.TestTool.test_jsonlines) ... ok
+test_jsonlines_from_file (test.test_json.test_tool.TestTool.test_jsonlines_from_file) ... ok
+test_no_ensure_ascii_flag (test.test_json.test_tool.TestTool.test_no_ensure_ascii_flag) ... ok
+test_no_indent (test.test_json.test_tool.TestTool.test_no_indent) ... ok
+test_non_ascii_infile (test.test_json.test_tool.TestTool.test_non_ascii_infile) ... ok
+test_sort_keys_flag (test.test_json.test_tool.TestTool.test_sort_keys_flag) ... ok
+test_stdin_stdout (test.test_json.test_tool.TestTool.test_stdin_stdout) ... ok
+test_tab (test.test_json.test_tool.TestTool.test_tab) ... ok
+test_writing_in_place (test.test_json.test_tool.TestTool.test_writing_in_place) ... ok
+test_ascii_non_printable_decode (test.test_json.test_unicode.TestCUnicode.test_ascii_non_printable_decode) ... ok
+test_ascii_non_printable_encode (test.test_json.test_unicode.TestCUnicode.test_ascii_non_printable_encode) ... ok
+test_big_unicode_decode (test.test_json.test_unicode.TestCUnicode.test_big_unicode_decode) ... ok
+test_big_unicode_encode (test.test_json.test_unicode.TestCUnicode.test_big_unicode_encode) ... ok
+test_bytes_decode (test.test_json.test_unicode.TestCUnicode.test_bytes_decode) ... ok
+test_bytes_encode (test.test_json.test_unicode.TestCUnicode.test_bytes_encode) ... ok
+test_encoding3 (test.test_json.test_unicode.TestCUnicode.test_encoding3) ... ok
+test_encoding4 (test.test_json.test_unicode.TestCUnicode.test_encoding4) ... ok
+test_encoding5 (test.test_json.test_unicode.TestCUnicode.test_encoding5) ... ok
+test_encoding6 (test.test_json.test_unicode.TestCUnicode.test_encoding6) ... ok
+test_encoding7 (test.test_json.test_unicode.TestCUnicode.test_encoding7) ... ok
+test_escaped_decode (test.test_json.test_unicode.TestCUnicode.test_escaped_decode) ... ok
+test_object_pairs_hook_with_unicode (test.test_json.test_unicode.TestCUnicode.test_object_pairs_hook_with_unicode) ... ok
+test_single_surrogate_decode (test.test_json.test_unicode.TestCUnicode.test_single_surrogate_decode) ... ok
+test_single_surrogate_encode (test.test_json.test_unicode.TestCUnicode.test_single_surrogate_encode) ... ok
+test_unicode_decode (test.test_json.test_unicode.TestCUnicode.test_unicode_decode) ... ok
+test_unicode_preservation (test.test_json.test_unicode.TestCUnicode.test_unicode_preservation) ... ok
+test_ascii_non_printable_decode (test.test_json.test_unicode.TestPyUnicode.test_ascii_non_printable_decode) ... ok
+test_ascii_non_printable_encode (test.test_json.test_unicode.TestPyUnicode.test_ascii_non_printable_encode) ... ok
+test_big_unicode_decode (test.test_json.test_unicode.TestPyUnicode.test_big_unicode_decode) ... ok
+test_big_unicode_encode (test.test_json.test_unicode.TestPyUnicode.test_big_unicode_encode) ... ok
+test_bytes_decode (test.test_json.test_unicode.TestPyUnicode.test_bytes_decode) ... ok
+test_bytes_encode (test.test_json.test_unicode.TestPyUnicode.test_bytes_encode) ... ok
+test_encoding3 (test.test_json.test_unicode.TestPyUnicode.test_encoding3) ... ok
+test_encoding4 (test.test_json.test_unicode.TestPyUnicode.test_encoding4) ... ok
+test_encoding5 (test.test_json.test_unicode.TestPyUnicode.test_encoding5) ... ok
+test_encoding6 (test.test_json.test_unicode.TestPyUnicode.test_encoding6) ... ok
+test_encoding7 (test.test_json.test_unicode.TestPyUnicode.test_encoding7) ... ok
+test_escaped_decode (test.test_json.test_unicode.TestPyUnicode.test_escaped_decode) ... ok
+test_object_pairs_hook_with_unicode (test.test_json.test_unicode.TestPyUnicode.test_object_pairs_hook_with_unicode) ... ok
+test_single_surrogate_decode (test.test_json.test_unicode.TestPyUnicode.test_single_surrogate_decode) ... ok
+test_single_surrogate_encode (test.test_json.test_unicode.TestPyUnicode.test_single_surrogate_encode) ... ok
+test_unicode_decode (test.test_json.test_unicode.TestPyUnicode.test_unicode_decode) ... ok
+test_unicode_preservation (test.test_json.test_unicode.TestPyUnicode.test_unicode_preservation) ... ok
+
+----------------------------------------------------------------------
+Ran 239 tests in 3.800s
+
+OK (skipped=3)
+0:00:06 load avg: 11.33 mem:   43.2 MiB [ 9/10] test_json passed
+0:00:06 load avg: 11.33 mem:   43.2 MiB [10/10] test_htmlparser
+test_adjacent_attributes (test.test_htmlparser.AttributesTestCase.test_adjacent_attributes) ... ok
+test_attr_entity_replacement (test.test_htmlparser.AttributesTestCase.test_attr_entity_replacement) ... ok
+test_attr_funky_names (test.test_htmlparser.AttributesTestCase.test_attr_funky_names) ... ok
+test_attr_funky_names2 (test.test_htmlparser.AttributesTestCase.test_attr_funky_names2) ... ok
+test_attr_nonascii (test.test_htmlparser.AttributesTestCase.test_attr_nonascii) ... ok
+test_attr_syntax (test.test_htmlparser.AttributesTestCase.test_attr_syntax) ... ok
+test_attr_values (test.test_htmlparser.AttributesTestCase.test_attr_values) ... ok
+test_comma_between_attributes (test.test_htmlparser.AttributesTestCase.test_comma_between_attributes) ... ok
+test_end_tag_in_attribute_value (test.test_htmlparser.AttributesTestCase.test_end_tag_in_attribute_value) ... ok
+test_entities_in_attribute_value (test.test_htmlparser.AttributesTestCase.test_entities_in_attribute_value) ... ok
+test_entityrefs_in_attributes (test.test_htmlparser.AttributesTestCase.test_entityrefs_in_attributes) ... ok
+test_javascript_attribute_value (test.test_htmlparser.AttributesTestCase.test_javascript_attribute_value) ... ok
+test_malformed_adjacent_attributes (test.test_htmlparser.AttributesTestCase.test_malformed_adjacent_attributes) ... ok
+test_malformed_attributes (test.test_htmlparser.AttributesTestCase.test_malformed_attributes) ... ok
+test_missing_attribute_value (test.test_htmlparser.AttributesTestCase.test_missing_attribute_value) ... ok
+test_weird_chars_in_unquoted_attribute_values (test.test_htmlparser.AttributesTestCase.test_weird_chars_in_unquoted_attribute_values) ... ok
+test_with_unquoted_attributes (test.test_htmlparser.AttributesTestCase.test_with_unquoted_attributes) ... ok
+test_bad_nesting (test.test_htmlparser.HTMLParserTestCase.test_bad_nesting) ... ok
+test_bare_ampersands (test.test_htmlparser.HTMLParserTestCase.test_bare_ampersands) ... ok
+test_bare_pointy_brackets (test.test_htmlparser.HTMLParserTestCase.test_bare_pointy_brackets) ... ok
+test_bogus_comments (test.test_htmlparser.HTMLParserTestCase.test_bogus_comments) ... ok
+test_broken_condcoms (test.test_htmlparser.HTMLParserTestCase.test_broken_condcoms) ... ok
+test_broken_invalid_end_tag (test.test_htmlparser.HTMLParserTestCase.test_broken_invalid_end_tag) ... ok
+test_buffer_artefacts (test.test_htmlparser.HTMLParserTestCase.test_buffer_artefacts) ... ok
+test_cdata_section (test.test_htmlparser.HTMLParserTestCase.test_cdata_section) ... ok
+test_cdata_section_content (test.test_htmlparser.HTMLParserTestCase.test_cdata_section_content) ... ok
+test_closing_tag (test.test_htmlparser.HTMLParserTestCase.test_closing_tag) ... ok
+test_comments (test.test_htmlparser.HTMLParserTestCase.test_comments) ... ok
+test_condcoms (test.test_htmlparser.HTMLParserTestCase.test_condcoms) ... ok
+test_convert_charrefs (test.test_htmlparser.HTMLParserTestCase.test_convert_charrefs) ... ok
+test_convert_charrefs_dropped_text (test.test_htmlparser.HTMLParserTestCase.test_convert_charrefs_dropped_text) ... ok
+test_convert_charrefs_in_attribute_values (test.test_htmlparser.HTMLParserTestCase.test_convert_charrefs_in_attribute_values) ... ok
+test_correct_detection_of_start_tags (test.test_htmlparser.HTMLParserTestCase.test_correct_detection_of_start_tags) ... ok
+test_declaration_junk_chars (test.test_htmlparser.HTMLParserTestCase.test_declaration_junk_chars) ... ok
+test_eof_in_cdata (test.test_htmlparser.HTMLParserTestCase.test_eof_in_cdata) ... ok
+test_eof_in_charref (test.test_htmlparser.HTMLParserTestCase.test_eof_in_charref) ... ok
+test_eof_in_comments (test.test_htmlparser.HTMLParserTestCase.test_eof_in_comments) ... ok
+test_eof_in_declarations (test.test_htmlparser.HTMLParserTestCase.test_eof_in_declarations) ... ok
+test_eof_in_entityref (test.test_htmlparser.HTMLParserTestCase.test_eof_in_entityref) ... ok
+test_eof_in_script (test.test_htmlparser.HTMLParserTestCase.test_eof_in_script) ... ok
+test_eof_in_title (test.test_htmlparser.HTMLParserTestCase.test_eof_in_title) ... ok
+test_eof_no_quadratic_complexity (test.test_htmlparser.HTMLParserTestCase.test_eof_no_quadratic_complexity) ... skipped "resource 'cpu' is not enabled"
+test_get_starttag_text (test.test_htmlparser.HTMLParserTestCase.test_get_starttag_text) ... ok
+test_illegal_declarations (test.test_htmlparser.HTMLParserTestCase.test_illegal_declarations) ... ok
+test_incremental_no_quadratic_complexity (test.test_htmlparser.HTMLParserTestCase.test_incremental_no_quadratic_complexity) ... skipped "resource 'cpu' is not enabled"
+test_invalid_closing_tag (test.test_htmlparser.HTMLParserTestCase.test_invalid_closing_tag) ... ok
+test_invalid_end_tags (test.test_htmlparser.HTMLParserTestCase.test_invalid_end_tags) ... ok
+test_invalid_nonascii_closing_tag (test.test_htmlparser.HTMLParserTestCase.test_invalid_nonascii_closing_tag) ... ok
+test_malformatted_charref (test.test_htmlparser.HTMLParserTestCase.test_malformatted_charref) ... ok
+test_noscript_content (test.test_htmlparser.HTMLParserTestCase.test_noscript_content) ... ok
+test_plaintext_content (test.test_htmlparser.HTMLParserTestCase.test_plaintext_content) ... ok
+test_processing_instruction_only (test.test_htmlparser.HTMLParserTestCase.test_processing_instruction_only) ... ok
+test_rawtext_content (test.test_htmlparser.HTMLParserTestCase.test_rawtext_content) ... ok
+test_rcdata_content (test.test_htmlparser.HTMLParserTestCase.test_rcdata_content) ... ok
+test_script_closing_tag (test.test_htmlparser.HTMLParserTestCase.test_script_closing_tag) ... ok
+test_script_content (test.test_htmlparser.HTMLParserTestCase.test_script_content) ... ok
+test_simple_html (test.test_htmlparser.HTMLParserTestCase.test_simple_html) ... ok
+test_slashes_in_endtag (test.test_htmlparser.HTMLParserTestCase.test_slashes_in_endtag) ... ok
+test_slashes_in_starttag (test.test_htmlparser.HTMLParserTestCase.test_slashes_in_starttag) ... ok
+test_startendtag (test.test_htmlparser.HTMLParserTestCase.test_startendtag) ... ok
+test_starttag_end_boundary (test.test_htmlparser.HTMLParserTestCase.test_starttag_end_boundary) ... ok
+test_starttag_junk_chars (test.test_htmlparser.HTMLParserTestCase.test_starttag_junk_chars) ... ok
+test_style_content (test.test_htmlparser.HTMLParserTestCase.test_style_content) ... ok
+test_tolerant_parsing (test.test_htmlparser.HTMLParserTestCase.test_tolerant_parsing) ... ok
+test_unclosed_charref (test.test_htmlparser.HTMLParserTestCase.test_unclosed_charref) ... ok
+test_unclosed_entityref (test.test_htmlparser.HTMLParserTestCase.test_unclosed_entityref) ... ok
+test_valid_doctypes (test.test_htmlparser.HTMLParserTestCase.test_valid_doctypes) ... ok
+test_base_class_methods_called (test.test_htmlparser.TestInheritance.test_base_class_methods_called) ... ok
+
+----------------------------------------------------------------------
+Ran 68 tests in 0.038s
+
+OK (skipped=2)
+0:00:06 load avg: 11.33 mem:   43.2 MiB [10/10] test_htmlparser passed
+
+== Tests result: SUCCESS ==
+
+All 10 tests OK.
+
+Total duration: 6.2 sec
+Total tests: run=505 skipped=15
+Total test files: run=10/10
+Result: SUCCESS

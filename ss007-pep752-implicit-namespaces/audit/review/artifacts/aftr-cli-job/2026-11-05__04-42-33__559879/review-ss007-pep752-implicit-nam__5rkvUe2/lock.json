@@ -1,0 +1,58 @@
+{
+    "schema_version": 2,
+    "task": {
+        "name": "review-ss007-pep752-implicit-namespaces",
+        "type": "local",
+        "digest": "sha256:0c0e03febe3950abae0f7e64e2c8459d0ab75d92d93cceac10b32f287bd954a8",
+        "path": "review-ss007-pep752-implicit-namespaces"
+    },
+    "install_only": false,
+    "timeout_multiplier": 3.0,
+    "agent": {
+        "import_path": "aai.harbor.agents.codex:MetaCodex",
+        "model_name": "gpt-6.1-sol",
+        "skills": [],
+        "max_timeout_sec": 14400.0,
+        "resume_trajectory": false,
+        "extra_allowed_hosts": [],
+        "kwargs": {},
+        "env": {
+            "NO_PROXY": "${CODIMANGO_AGENT_ENV_4E4F5F50524F5859}",
+            "no_proxy": "${CODIMANGO_AGENT_ENV_6E6F5F70726F7879}"
+        },
+        "mcp_servers": []
+    },
+    "bridge_inputs": {},
+    "skills": [],
+    "environment": {
+        "type": "docker",
+        "force_build": false,
+        "delete": true,
+        "cpu_enforcement_policy": "auto",
+        "memory_enforcement_policy": "auto",
+        "mounts": [
+            {
+                "type": "bind",
+                "source": "/tmp/lh-aftr.Ck46Dt/agentic-review-cli-79zi3gf0/taskfiles",
+                "target": "/app/taskfiles",
+                "read_only": true
+            }
+        ],
+        "extra_docker_compose": [
+            "/tmp/lh-aftr.Ck46Dt/agentic-review-cli-79zi3gf0/jobs/2026-11-05__04-42-33__559879/docker-compose-ai-gateway.yaml"
+        ],
+        "kwargs": {},
+        "extra_allowed_hosts": []
+    },
+    "extra_docker_compose": [
+        {
+            "path": "/tmp/lh-aftr.Ck46Dt/agentic-review-cli-79zi3gf0/jobs/2026-11-05__04-42-33__559879/docker-compose-ai-gateway.yaml",
+            "digest": "sha256:37c8b7f08db82210caa857fdc50bc7a856ea22176b7f2526b52308524d9636b6"
+        }
+    ],
+    "verifier": {
+        "import_path": "aai.harbor.fork_verifier:ForkVerifier",
+        "disable": false,
+        "environment_mode": "shared"
+    }
+}

@@ -2,17 +2,15 @@
   "all_stale": false,
   "any_stale": false,
   "cloud": {
-    "head": "0d8810c0692b",
-    "reason": "1 uncommitted graded file(s); codimango has no commit matching this working tree",
+    "head": "2d909dd6c489",
+    "reason": "codimango has no jobs for this task, or the CLI could not reach it",
     "usable": false
   },
   "git": {
-    "last_commit": "0d8810c0692b",
-    "last_commit_time": "2026-11-05T04:12:08-08:00",
+    "last_commit": "2d909dd6c489",
+    "last_commit_time": "2026-11-05T04:36:08-08:00",
     "tracked": true,
-    "uncommitted_graded_files": [
-      "build/.coverage-build.log"
-    ]
+    "uncommitted_graded_files": []
   },
   "jobs": {
     "2026-11-05__04-19-19__6ea475": {
