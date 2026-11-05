@@ -140,5 +140,16 @@ run_control neg junit_forge solve "$TASKDIR/build/neg_controls/junit_forge"
 # on the single-process probe (both forgeries win at shutdown), 0 once the
 # split probe's parent writes the verdict after the armed child has exited.
 run_control neg probe_forge solve "$TASKDIR/build/neg_controls/probe_forge"
+# neg: replaced-interpreter attack on the otherwise UNSOLVED tree (only a
+# forging /app/python covering every required JUnit id plus the probe
+# verdict; no feature package). Scores 1 on the pre-fix harness, whose
+# make-and-install block -- the only thing that ever relinked the binary
+# (a full make relinks unconditionally, measured) -- is guarded on the
+# package directory and therefore skipped here, so the forged binary runs
+# as suite runner and probe parent. Scores 0 once run_script.sh assures
+# the interpreter unconditionally, the probe parent runs under the
+# verifier-owned interpreter, and the closed artifact set stops the
+# binary crossing to the separate verifier at all.
+run_control neg exec_forge nosolve "$TASKDIR/build/neg_controls/exec_forge"
 # twice: one solved container graded twice.
 run_twice "$STEP"

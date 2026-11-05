@@ -276,7 +276,7 @@ new file mode 100644
 index 0000000..6481620
 --- /dev/null
 +++ b/Lib/packagenamespaces/__init__.py
-@@ -0,0 +1,64 @@
+@@ -0,0 +1,65 @@
 +"""Implicit namespaces for package repositories (PEP 752).
 +
 +This package implements PEP 752: organizations reserve package-name
@@ -287,7 +287,7 @@ index 0000000..6481620
 +
 +from __future__ import annotations
 +
-+from .cli import CONFLICT_EXIT, main
++from .cli import CONFLICT_EXIT, build_parser, main
 +from .grants import (
 +    DEFAULT_DEPTH_LIMIT,
 +    DepthLimitError,
@@ -334,6 +334,7 @@ index 0000000..6481620
 +    "UnknownGrantError",
 +    "UploadConflictError",
 +    "authorize_upload",
++    "build_parser",
 +    "grants_overlap",
 +    "hyphen_depth",
 +    "is_valid_namespace",

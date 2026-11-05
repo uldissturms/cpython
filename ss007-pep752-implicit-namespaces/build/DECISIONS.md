@@ -641,3 +641,64 @@ files, +20 anchors, zero duplicates.
   AUTHOR_1P (4 contract slices changed, 0 id changes, instruction
   redraw armed). Scratch under /home/uldis/cpython/.scratch/ss007-r8/
   plus /tmp probe files, removed after the run.
+- Round 9 (REVISION, pre-push beta REVISE, BAD_LEAKAGE, 7 routed
+  findings; R03 and difficulty not routed). R01/R02/R12-spec: the
+  graded suite, probe and golden already required raise-on-deny and a
+  tuple policy container -- the instruction's bare `False` wording
+  and missing container type were the outliers, so facts drop the
+  bare True/False lines for explicit raise/tuple lines plus two
+  build_parser lines, anchors synced, and the instruction job moves
+  from redraw to revise:true with a one-line reason (kept page
+  re-checked against facts). R12-golden: the package root now
+  re-exports build_parser (cli.__all__ already declared it public),
+  spliced into both solve.sh copies plus the config patch with
+  byte-identical text, hunk count fixed, `git apply --check`
+  verified. R05/R07: closed-set artifacts (Lib + Tools package dirs,
+  news dir, 5 files) so the agent's built interpreter never reaches
+  the separate verifier, whose image already holds a pristine base
+  build; run_script.sh assures the interpreter unconditionally
+  before anything executes it (non-ELF removed and relinked via
+  `make python`); the probe parent runs under /usr/bin/python3 and
+  refuses to spawn a non-ELF child. Measured: a full make relinks
+  `python` unconditionally, which is why the pre-fix exploit won
+  only without a package dir (the make block was guarded on it).
+  R06: new probe `grants.exports` check (Grant/GrantError from the
+  root plus root __all__ self-consistency); probe-only, no new suite
+  ids (110 f2p + 340 p2p unchanged; probe 39 -> 40 checks). R08:
+  the offline check is behavioral in probe and contract (PATH stubs
+  logging invocations + comment-carrying copies in a mirrored
+  Tools/ layout), same test id, no text matching. New
+  `exec_forge` neg control (forged /app/python, no package)
+  replicates the reviewer's exploit: 1 on the pre-fix harness, 0
+  post-fix with the binary observed relinked to ELF. Validated in
+  containers of the task image: oracle 1 online AND --network=none
+  at 40/40 probe; base 0; sensitivity demos (Grant/GrantError
+  removal fails grants.exports; `curl ... || true` in a script
+  fails harness.offline); full run_controls green (pos 1.0 x2, all
+  9 negs 0.0, twice 1.0,1.0). Preserved green: every
+  previously-green behavior still green; harness mirrors in sync.
+  Instruction + tooling test re-authoring ride the next AUTHOR_1P.
+  Scratch under /home/uldis/cpython/.scratch/ss007-rev/, removed
+  after the run.
+- Round 12 (SURGICAL, harbor preflight ArtifactCaptureError): the
+  round-9 closed-set declaration died before any grading --
+  `/app/Lib/packagenamespaces` and `/app/Tools/packagenamespaces`
+  share a basename and Harbor stages each entry under the shared
+  artifacts dir keyed by basename (proven by oracle
+  sanity-ss007-r10 in _collect_step_artifacts). Fix declares the
+  two package dirs via their non-colliding parents `/app/Lib` and
+  `/app/Tools`; the other six entries keep distinct basenames
+  (8/8 unique, TOML-parsed). R05/R07 intent preserved: the set
+  stays closed to source paths -- no build/, no python binary, no
+  libpython links reach the separate verifier (staged set
+  observed: Lib 62M + Tools 4.3M + Library + 5 files). Link-free:
+  0 symlinks under Lib/Tools/Doc/NEWS.d/next at base commit
+  416e8d89 (find), the image delinks the whole tree anyway, and
+  make-created links land only under build/ (now copies via the
+  sharedmods patch), /app root, or DESTDIR -- none under the
+  widened entries; the staged capture itself holds 0 symlinks.
+  Proven end to end with a real oracle run: `codimango bench run
+  -p ss007-pep752-implicit-namespaces -a oracle -k 1` (job
+  2026-11-05__00-39-17__e02225), staged, graded, reward 1.0,
+  failure_mode NONE, zero ArtifactCaptureError/overlap mentions.
+  No test, config, instruction, solution, or harness file touched.

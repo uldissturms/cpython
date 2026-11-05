@@ -62,8 +62,8 @@
   "UploadConflictError.project",
   "UploadConflictError.namespace",
   "UploadConflictError.owner",
-  "True",
-  "False",
+  "allowed checks return True",
+  "denied checks raise UploadConflictError, never return False",
   "normalization runs before the upload check",
   "RepositoryIndex",
   "1.5",
@@ -213,6 +213,9 @@
   "GrantStore, RepositoryIndex and SecurityPolicy import from the package root",
   "list_namespaces returns a bare sorted list of name mappings",
   "the versioned api_version envelope belongs to bare dump only",
-  "invalid policy namespaces raise InvalidNamespaceError"
+  "invalid policy namespaces raise InvalidNamespaceError",
+  "SecurityPolicy.namespaces is a tuple of normalized names",
+  "build_parser builds the CLI argument parser",
+  "the package root re-exports build_parser"
  ]
 }

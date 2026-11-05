@@ -37,7 +37,24 @@ mcp_servers = []
 name = "1_pep752"
 dependencies = []
 min_reward = 1.0
-artifacts = ["/app"]
+# Closed set: only the feature's source paths travel to the separate
+# verifier, whose image already holds a pristine base build (its own
+# /app/python). The agent's built interpreter and objects never cross,
+# so a replaced /app/python cannot execute at grade time (R05/R07).
+# Harbor stages each entry under the shared artifacts dir keyed by
+# basename, so no two entries may share one: the two package dirs are
+# declared via their non-colliding parents /app/Lib and /app/Tools
+# (round 12: same-named package dirs collided in preflight).
+artifacts = [
+  "/app/Lib",
+  "/app/Tools",
+  "/app/Misc/NEWS.d/next/Library",
+  "/app/Doc/library/packagenamespaces.rst",
+  "/app/Doc/library/distribution.rst",
+  "/app/Doc/whatsnew/3.16.rst",
+  "/app/Makefile.pre.in",
+  "/app/Python/stdlib_module_names.h",
+]
 
 [steps.verifier]
 timeout_sec = 1800.0

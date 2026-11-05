@@ -1,0 +1,56 @@
+#!/bin/bash
+# NEG exec-forge control: a submission that replaces /app/python with a
+# forging script. It fabricates the JUnit report (covering every required
+# id read live from /tests/config.json) and the probe verdict, so a
+# harness that trusts the tree's interpreter scores reward 1 on a broken
+# tree. Post-fix the harness relinks the binary before running anything
+# (run_script.sh assurance) and runs the probe parent under the
+# verifier-owned interpreter, so this scores 0.
+JUNIT=""
+PROBEPY=""
+LAST=""
+PREV=""
+for arg in "$@"; do
+    if [ "$PREV" = "--junit-xml" ]; then
+        JUNIT="$arg"
+    fi
+    case "$arg" in
+        */probe.py) PROBEPY="$arg" ;;
+    esac
+    PREV="$arg"
+    LAST="$arg"
+done
+for arg in "$@"; do
+    if [ "$arg" = "--child" ]; then
+        # Probe-child form: print a passed result line.
+        N="$(grep -cE '^\s+\("[a-z0-9_.]+", [a-z0-9_]+\)' "$PROBEPY" 2>/dev/null || echo 39)"
+        /usr/bin/python3 -c 'import json,sys; print("LAMBO_PROBE_PAYLOAD " + json.dumps({"passed": True, "failed": [], "checks": int(sys.argv[1])}))' "$N"
+        exit 0
+    fi
+done
+if [ -n "$JUNIT" ]; then
+    # Suite-runner form: forge an all-PASSED JUnit report.
+    /usr/bin/python3 - "$JUNIT" <<'PY'
+import json, sys, xml.sax.saxutils
+cfg = json.load(open("/tests/config.json", encoding="utf-8"))
+ids = list(cfg.get("fail_to_pass") or []) + list(cfg.get("pass_to_pass") or [])
+with open(sys.argv[1], "w", encoding="utf-8") as handle:
+    handle.write('<?xml version="1.0" encoding="utf-8"?>\n')
+    handle.write(f'<testsuite name="forged" tests="{len(ids)}">\n')
+    for name in ids:
+        handle.write(f'  <testcase classname="forge" name="{xml.sax.saxutils.escape(name)}"></testcase>\n')
+    handle.write('</testsuite>\n')
+PY
+    exit 0
+fi
+case "$LAST" in
+    *.json)
+        if [ -n "$PROBEPY" ]; then
+            # Probe-parent form: forge the verdict file.
+            N="$(grep -cE '^\s+\("[a-z0-9_.]+", [a-z0-9_]+\)' "$PROBEPY" 2>/dev/null || echo 39)"
+            /usr/bin/python3 -c 'import json,sys; json.dump({"passed": True, "failed": [], "checks": int(sys.argv[2])}, open(sys.argv[1], "w"), indent=2)' "$LAST" "$N"
+            exit 0
+        fi
+        ;;
+esac
+exit 0

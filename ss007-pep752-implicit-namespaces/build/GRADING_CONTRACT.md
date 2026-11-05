@@ -455,14 +455,21 @@ the `Tools/packagenamespaces/` scripts. `DocsTests` reads doc files.
   absent from its stdout. A verifier that checks only that
   second-index `grants` is a list fails the last two.
 - `test.test_pep752_tooling.HarnessTests.test_scripts_use_no_network`:
-  neither `gen_fixtures.sh` nor `verify_offline.sh` names a network
-  primitive: the words `curl`, `wget`, `ssh`, `scp`, `sftp`, `ftp`,
-  `lftp`, `telnet`, `nc`, `ncat`, `socat`, `urllib`, `http.client`,
-  `httpx` (each matched with word boundaries) appear in neither file.
-  Fixture URL strings such as `https://...` are allowed, and bare
-  `requests`/`socket` words are NOT matched (fixture project names
-  would false positive); only the network commands and client
-  libraries above are forbidden.
+  BEHAVIORAL, never textual: the test matches no word in either
+  script file. Instead it creates a stub directory holding `curl`,
+  `wget`, `ssh`, `scp`, `sftp`, `ftp`, `lftp`, `telnet`, `nc`, `ncat`,
+  `socat`, `httpx` commands that log their invocation and exit 1,
+  then runs `bash gen_fixtures.sh <tmp>` and
+  `bash verify_offline.sh <tmp>` with that directory first on PATH:
+  both succeed (`verify: all checks passed` for the verifier) and the
+  log shows zero invocations. Then it copies each script, appends
+  comment lines naming network words (`# ... curl wget ... urllib
+  http.client httpx`), and runs the copies the same way (the verify
+  copy runs from a mirrored `Tools/` layout with `Lib` linked back to
+  the repo, since the script derives its root from its own path):
+  both still succeed. A script that shells out to a network command
+  fails (the stub's exit 1 under `set -e`, or the empty-log
+  assertion); a comment merely mentioning one passes.
 - `test.test_pep752_tooling.DocsTests.test_library_page_documents_module`:
   `Doc/library/packagenamespaces.rst` exists and contains
   `packagenamespaces`, `namespaces`, `SecurityPolicy`,

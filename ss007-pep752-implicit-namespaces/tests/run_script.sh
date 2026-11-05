@@ -10,6 +10,21 @@
 REPO=/app
 [ -d "$REPO" ] || REPO=/testbed
 JUNIT_XML="${LAMBO_JUNIT_XML:-/tmp/lambo-junit.xml}"
+SYS_PY=/usr/bin/python3
+
+# Interpreter assurance, FIRST -- before any make/install/suite step can
+# execute $REPO/python. A submission that replaces the built interpreter
+# with a script can forge both grading channels (it runs as the suite
+# runner here and as the probe child later), so a non-ELF executable is
+# removed and relinked from the tree's own objects. The check itself runs
+# under the image's python3, never the tree under test. A tree that cannot
+# relink fails naturally below (no working binary means no report, which
+# the parser grades as zero tests). Genuine binaries skip the relink.
+if ! "$SYS_PY" -c 'import sys; sys.exit(0 if open(sys.argv[1], "rb").read(4) == b"\x7fELF" else 1)' \
+    "$REPO/python" 2>/dev/null; then
+    rm -f "$REPO/python"
+    make -C "$REPO" -j4 -s python >/dev/null 2>&1 || true
+fi
 
 RAW_ARGS="$*"
 TESTS=""
@@ -62,7 +77,7 @@ fi
 
 # Locked-down invocation, all four at once:
 #   - neutral cwd (never $REPO: nothing agent-owned shadows an import),
-#   - absolute interpreter path,
+#   - absolute interpreter path (assured ELF above, relinked if replaced),
 #   - -I (ignore PYTHONPATH/cwd/user site) + -S (no site/sitecustomize),
 #   - PYTHONSAFEPATH + scrubbed PYTHONPATH as belt and braces.
 # The stdlib under test still comes from the build tree via the binary's own

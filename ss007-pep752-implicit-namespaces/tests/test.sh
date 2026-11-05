@@ -84,15 +84,17 @@ cp -f "${LAMBO_JUNIT_XML:-/tmp/lambo-junit.xml}" "$LOG_DIR/junit.xml" 2>/dev/nul
 # after a genuine failing run (an atexit hook suffices), so a report-only
 # grader scores a forgery. The probe re-checks the specified behaviors and
 # never reads the report; reward needs the probe AND every required suite
-# id. The probe itself splits in two: a child runs the checks in a FRESH
-# locked-down interpreter (absolute path, -I -S, neutral cwd, scrubbed
-# environment) from the verifier-owned /tests tree and prints one marked
-# result line, while the parent -- which never imports agent code -- writes
-# the verdict file after the child has exited, so a shutdown hook the
-# child armed cannot rewrite it afterwards. A missing, unreadable, or
-# parent-rejected probe payload fails closed in step 4.
+# id. The probe itself splits in two: a child runs the checks in the
+# assured tree interpreter (absolute path, -I -S, neutral cwd, scrubbed
+# environment; run_script.sh relinked it when it was not an ELF binary)
+# from the verifier-owned /tests tree and prints one marked result line,
+# while the parent -- which never imports agent code and itself runs under
+# the verifier-owned $PY, never the tree's binary -- writes the verdict
+# file after the child has exited, so a shutdown hook the child armed
+# cannot rewrite it afterwards. A missing, unreadable, or parent-rejected
+# probe payload fails closed in step 4.
 rm -f "$LOG_DIR/probe.json"
-(cd / && env -u PYTHONPATH PYTHONSAFEPATH=1 "$REPO/python" -I -S \
+(cd / && env -u PYTHONPATH PYTHONSAFEPATH=1 "$PY" -I -S \
     "$TESTS_DIR/probe.py" "$REPO" "$LOG_DIR/probe.json" \
     2>"$LOG_DIR/probe.err") || true
 

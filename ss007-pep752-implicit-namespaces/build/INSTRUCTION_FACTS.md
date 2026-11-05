@@ -117,8 +117,8 @@ UploadConflictError.status_code
 UploadConflictError.project
 UploadConflictError.namespace
 UploadConflictError.owner
-True
-False
+allowed checks return True
+denied checks raise UploadConflictError, never return False
 normalization runs before the upload check
 
 ## Repository metadata (metadata)
@@ -185,6 +185,7 @@ SecurityPolicy.evaluate
 SecurityPolicy.namespaces
 SecurityPolicy.owner
 SecurityPolicy takes namespaces and owner
+SecurityPolicy.namespaces is a tuple of normalized names
 allows takes project and index
 evaluate takes requirements and index
 evaluate returns normalized-name to boolean mapping
@@ -203,6 +204,8 @@ empty policy owner raises ValueError
 main
 main(argv)
 main takes argv and returns an exit status
+build_parser builds the CLI argument parser
+the package root re-exports build_parser
 reserve <namespace> --owner <owner>
 list
 list --json

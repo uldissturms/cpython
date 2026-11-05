@@ -319,6 +319,21 @@ def grants_relationships():
     assert lone.parent("foo-bar-baz") is None
 
 
+def grants_root_exports():
+    # The package root re-exports every public symbol: Grant and GrantError
+    # are named in the spec and must resolve from the root (a tree that
+    # drops them still passes every other channel, so this check pins
+    # them). The import is local so a missing export fails this check,
+    # not the whole child.
+    need_impl()
+    import packagenamespaces
+    from packagenamespaces import Grant, GrantError
+    assert issubclass(GrantError, Exception)
+    assert isinstance(packagenamespaces.__all__, list)
+    for name in packagenamespaces.__all__:
+        assert hasattr(packagenamespaces, name), name
+
+
 # ---------------------------------------------------------------- uploads
 
 def _upload_store():
@@ -814,19 +829,66 @@ def harness_verify_rejects_bad_fixtures():
 
 
 def harness_scripts_use_no_network():
-    # Bare `requests`/`socket` words are NOT matched: fixture project
-    # names (the reference fixtures register `requests`) would false
-    # positive. The command and client-library names below have no such
-    # collision.
-    primitives = re.compile(
-        r"\b(curl|wget|ssh|scp|sftp|ftp|lftp|telnet|nc|ncat|socat"
-        r"|urllib|http\.client|httpx)\b")
-    for script in ("gen_fixtures.sh", "verify_offline.sh"):
-        path = _tools_path(script)
-        with open(path, encoding="utf-8") as handle:
-            content = handle.read()
-        found = primitives.search(content)
-        assert found is None, f"{script}: {found.group(0) if found else ''}"
+    # Behavioral, never textual: no word in either script is matched, so a
+    # comment merely mentioning a network tool passes. Instead the scripts
+    # run with every network command shadowed by a stub that logs its
+    # invocation and fails: genuine shell-outs to the network then fail
+    # (the stub's exit 1 under `set -e`, or the empty-log assertion),
+    # while offline scripts succeed with zero invocations. Commented
+    # copies prove the point directly by still passing.
+    network_cmds = ("curl", "wget", "ssh", "scp", "sftp", "ftp", "lftp",
+                    "telnet", "nc", "ncat", "socat", "httpx")
+    comment = ("# offline by design: curl wget ssh scp sftp ftp lftp "
+               "telnet nc ncat socat httpx urllib http.client\n")
+    with tempfile.TemporaryDirectory() as tmp:
+        stubdir = os.path.join(tmp, "stubs")
+        os.mkdir(stubdir)
+        log = os.path.join(tmp, "invocations.log")
+        for cmd in network_cmds:
+            stub = os.path.join(stubdir, cmd)
+            with open(stub, "w", encoding="utf-8") as handle:
+                handle.write(f"#!/bin/bash\necho {cmd} >> {log}\nexit 1\n")
+            os.chmod(stub, 0o755)
+        env = {"PATH": stubdir + os.pathsep + "/usr/bin:/bin",
+               "PYTHONSAFEPATH": "1"}
+        fixtures = os.path.join(tmp, "fixtures")
+        result = subprocess.run(
+            ["bash", _tools_path("gen_fixtures.sh"), fixtures],
+            capture_output=True, text=True, cwd="/", timeout=300, env=env)
+        assert result.returncode == 0, result.stderr
+        result = subprocess.run(
+            ["bash", _tools_path("verify_offline.sh"), fixtures],
+            capture_output=True, text=True, cwd="/", timeout=300, env=env)
+        assert result.returncode == 0, result.stderr
+        assert "verify: all checks passed" in result.stdout
+        assert not os.path.exists(log), open(log).read()
+        # Copies carrying network-word comments behave identically. The
+        # copies sit in a mirrored Tools/ layout with Lib linked back to
+        # the repo, because the verifier derives its root from its own
+        # path; only the trailing comment differs from the real scripts.
+        mirror = os.path.join(tmp, "mirror", "Tools", "packagenamespaces")
+        os.makedirs(mirror)
+        os.symlink(os.path.join(REPO_ROOT, "Lib"),
+                   os.path.join(tmp, "mirror", "Lib"))
+        commented = {}
+        for script in ("gen_fixtures.sh", "verify_offline.sh"):
+            with open(_tools_path(script), encoding="utf-8") as handle:
+                content = handle.read()
+            copy_path = os.path.join(mirror, script)
+            with open(copy_path, "w", encoding="utf-8") as handle:
+                handle.write(content + comment)
+            commented[script] = copy_path
+        alt_fixtures = os.path.join(tmp, "alt-fixtures")
+        result = subprocess.run(
+            ["bash", commented["gen_fixtures.sh"], alt_fixtures],
+            capture_output=True, text=True, cwd="/", timeout=300, env=env)
+        assert result.returncode == 0, result.stderr
+        result = subprocess.run(
+            ["bash", commented["verify_offline.sh"], alt_fixtures],
+            capture_output=True, text=True, cwd="/", timeout=300, env=env)
+        assert result.returncode == 0, result.stderr
+        assert "verify: all checks passed" in result.stdout
+        assert not os.path.exists(log), open(log).read()
 
 
 # ------------------------------------------------------------------- docs
@@ -893,6 +955,7 @@ CHECKS = [
     ("grants.nesting", grants_duplicates_and_nesting),
     ("grants.transfer", grants_transfer_and_remove),
     ("grants.relationships", grants_relationships),
+    ("grants.exports", grants_root_exports),
     ("uploads.gate", uploads_allow_and_deny),
     ("uploads.constant", uploads_status_constant),
     ("uploads.grandfathered", uploads_grandfathered),
@@ -969,9 +1032,21 @@ def _parent_main(argv):
         sys.stderr.write(f"probe: FAIL {reason}\n")
         return 0
 
+    child_bin = os.path.join(repo_root, "python")
+    try:
+        with open(child_bin, "rb") as handle:
+            magic = handle.read(4)
+    except OSError as exc:
+        return fail_closed(f"probe: cannot read check interpreter: {exc!r}")
+    # Never execute a replacement: only a built ELF executable may run the
+    # checks (run_script.sh already relinked a non-ELF binary; anything
+    # still wrong here fails closed instead of running it).
+    if magic != b"\x7fELF" or not os.access(child_bin, os.X_OK):
+        return fail_closed(
+            "probe: check interpreter is not a built executable")
     try:
         proc = subprocess.run(
-            [os.path.join(repo_root, "python"), "-I", "-S",
+            [child_bin, "-I", "-S",
              os.path.abspath(__file__), "--child", repo_root],
             capture_output=True, text=True, cwd="/", timeout=900,
             stdin=subprocess.DEVNULL, close_fds=True,

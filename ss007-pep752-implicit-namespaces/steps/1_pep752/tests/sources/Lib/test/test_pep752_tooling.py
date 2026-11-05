@@ -348,15 +348,55 @@ class HarnessTests(unittest.TestCase):
                 self.assertNotIn("verify: all checks passed", result.stdout)
 
     def test_scripts_use_no_network(self):
-        pattern = (
-            r"\b(?:socat|ncat|nc|telnet|lftp|ftp|sftp|scp|ssh|wget|curl|"
-            r"httpx|http\.client|urllib)\b"
+        commands = (
+            "curl", "wget", "ssh", "scp", "sftp", "ftp", "lftp",
+            "telnet", "nc", "ncat", "socat", "httpx",
         )
-        for filename in ("gen_fixtures.sh", "verify_offline.sh"):
-            with self.subTest(filename=filename):
-                path = os.path.join(REPO_ROOT, "Tools", "packagenamespaces", filename)
-                with open(path, encoding="utf-8") as stream:
-                    self.assertNotRegex(stream.read(), pattern)
+        with tempfile.TemporaryDirectory() as directory:
+            stub_directory = os.path.join(directory, "bin")
+            os.mkdir(stub_directory)
+            log = os.path.join(directory, "network.log")
+            with open(log, "w", encoding="utf-8"):
+                pass
+            for command in commands:
+                path = os.path.join(stub_directory, command)
+                with open(path, "w", encoding="utf-8") as stream:
+                    stream.write(
+                        '#!/bin/sh\n'
+                        'printf "%s\\n" "$0" >> "$PEP752_NETWORK_LOG"\n'
+                        'exit 1\n'
+                    )
+                os.chmod(path, 0o755)
+            env = os.environ.copy()
+            env["PATH"] = stub_directory + os.pathsep + env.get("PATH", "")
+            env["PEP752_NETWORK_LOG"] = log
+
+            mirror = os.path.join(directory, "mirror")
+            copied_tools = os.path.join(mirror, "Tools", "packagenamespaces")
+            os.makedirs(copied_tools)
+            os.symlink(os.path.join(REPO_ROOT, "Lib"), os.path.join(mirror, "Lib"))
+            for filename in ("gen_fixtures.sh", "verify_offline.sh"):
+                original = os.path.join(REPO_ROOT, "Tools", "packagenamespaces",
+                                        filename)
+                with open(original, encoding="utf-8") as stream:
+                    content = stream.read()
+                with open(os.path.join(copied_tools, filename), "w",
+                          encoding="utf-8") as stream:
+                    stream.write(content)
+                    stream.write("\n# " + " ".join(commands) + " urllib http.client\n")
+
+            for variant in ("original", "comments"):
+                with self.subTest(variant=variant):
+                    fixtures = os.path.join(directory, variant)
+                    os.mkdir(fixtures)
+                    for filename in ("gen_fixtures.sh", "verify_offline.sh"):
+                        script = (filename if variant == "original" else
+                                  os.path.join(copied_tools, filename))
+                        result = self.run_script(script, fixtures, env=env)
+                        if filename == "verify_offline.sh":
+                            self.assertIn("verify: all checks passed", result.stdout)
+                        with open(log, encoding="utf-8") as stream:
+                            self.assertEqual(stream.read(), "")
 
 
 class DocsTests(unittest.TestCase):
